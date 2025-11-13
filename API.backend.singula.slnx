@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="API.backend.singula/API.backend.singula.csproj" />
+  <Project Path="Singula.Core/Singula.Core.csproj" />
 </Solution>
