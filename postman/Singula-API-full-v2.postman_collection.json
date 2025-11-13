@@ -1,0 +1,217 @@
+{
+  "info": {
+    "name": "Singula API - Full v2",
+    "_postman_id": "singula-api-full-v2",
+    "description": "Colección completa (v2) para probar Singula API. Use environment variable {{baseUrl}} y {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Añade Authorization si existe token en environment",
+          "const token = pm.environment.get('token');",
+          "if (token) {",
+          "  // si ya existe header Authorization, lo reemplazamos",
+          "  const authIndex = pm.request.headers.findIndex(h => h.key && h.key.toLowerCase() === 'authorization');",
+          "  if (authIndex !== -1) {",
+          "    pm.request.headers.remove(authIndex);",
+          "  }",
+          "  pm.request.headers.add({ key: 'Authorization', value: 'Bearer ' + token });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Authenticate (obtain token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"P@ssw0rd\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/usuarios/authenticate", "host": [ "{{baseUrl}}" ], "path": [ "api", "usuarios", "authenticate" ] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "if (json && json.token) { pm.environment.set('token', json.token); pm.test('Token saved', function(){pm.expect(json.token).to.be.a('string')}); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create User (register)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin1\",\n  \"correo\": \"admin@example.com\",\n  \"password\": \"P@ssw0rd\",\n  \"idRolSistema\": 1,\n  \"idEstadoUsuario\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/api/usuarios", "host": [ "{{baseUrl}}" ], "path": [ "api", "usuarios" ] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        { "name": "GET /api/usuarios", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/usuarios", "host": ["{{baseUrl}}"], "path": ["api","usuarios"] } } },
+        { "name": "GET /api/usuarios/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/usuarios/:id", "host": ["{{baseUrl}}"], "path": ["api","usuarios",":id"] } } },
+        { "name": "POST /api/usuarios", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"username\":\"user1\", \"correo\":\"user1@example.com\", \"password\":\"P@ssw0rd\", \"idRolSistema\":1, \"idEstadoUsuario\":1 }"}, "url": {"raw":"{{baseUrl}}/api/usuarios","host":["{{baseUrl}}"],"path":["api","usuarios"]} } },
+        { "name": "PUT /api/usuarios/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"correo\": \"nuevo@example.com\" }"}, "url": {"raw":"{{baseUrl}}/api/usuarios/:id","host":["{{baseUrl}}"],"path":["api","usuarios",":id"]} } },
+        { "name": "DELETE /api/usuarios/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/usuarios/:id", "host": ["{{baseUrl}}"], "path": ["api","usuarios",":id"] } } }
+      ]
+    },
+    {
+      "name": "Areas",
+      "item": [
+        { "name": "GET /api/areas", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/areas", "host": ["{{baseUrl}}"], "path": ["api","areas"] } } },
+        { "name": "GET /api/areas/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/areas/:id", "host": ["{{baseUrl}}"], "path": ["api","areas",":id"] } } },
+        { "name": "POST /api/areas", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"nombreArea\": \"Soporte\", \"descripcion\": \"Area soporte\" }"}, "url": {"raw":"{{baseUrl}}/api/areas","host":["{{baseUrl}}"],"path":["api","areas"]} } },
+        { "name": "PUT /api/areas/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"nombreArea\": \"Soporte Mod\" }"}, "url": {"raw":"{{baseUrl}}/api/areas/:id","host":["{{baseUrl}}"],"path":["api","areas",":id"]} } },
+        { "name": "DELETE /api/areas/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/areas/:id", "host": ["{{baseUrl}}"], "path": ["api","areas",":id"] } } }
+      ]
+    },
+    {
+      "name": "Personals",
+      "item": [
+        { "name": "GET /api/personals", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/personals", "host": ["{{baseUrl}}"], "path": ["api","personals"] } } },
+        { "name": "GET /api/personals/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/personals/:id", "host": ["{{baseUrl}}"], "path": ["api","personals",":id"] } } },
+        { "name": "POST /api/personals", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"idUsuario\":1, \"nombres\":\"Juan\", \"apellidos\":\"Perez\", \"documento\":\"12345678\", \"estado\":\"active\" }"}, "url": {"raw":"{{baseUrl}}/api/personals","host":["{{baseUrl}}"],"path":["api","personals"]} } },
+        { "name": "PUT /api/personals/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"nombres\":\"Juanito\" }"}, "url": {"raw":"{{baseUrl}}/api/personals/:id","host":["{{baseUrl}}"],"path":["api","personals",":id"]} } },
+        { "name": "DELETE /api/personals/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/personals/:id", "host": ["{{baseUrl}}"], "path": ["api","personals",":id"] } } }
+      ]
+    },
+    {
+      "name": "RolRegistro",
+      "item": [
+        { "name": "GET /api/rolregistro", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rolregistro", "host": ["{{baseUrl}}"], "path": ["api","rolregistro"] } } },
+        { "name": "GET /api/rolregistro/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rolregistro/:id", "host": ["{{baseUrl}}"], "path": ["api","rolregistro",":id"] } } },
+        { "name": "POST /api/rolregistro", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"bloqueTech\":\"block\", \"descripcion\":\"desc\", \"esActivo\": true, \"nombreRol\": \"RolA\" }"}, "url": {"raw":"{{baseUrl}}/api/rolregistro","host":["{{baseUrl}}"],"path":["api","rolregistro"]} } },
+        { "name": "PUT /api/rolregistro/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"desc mod\" }"}, "url": {"raw":"{{baseUrl}}/api/rolregistro/:id","host":["{{baseUrl}}"],"path":["api","rolregistro",":id"]} } },
+        { "name": "DELETE /api/rolregistro/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/rolregistro/:id", "host": ["{{baseUrl}}"], "path": ["api","rolregistro",":id"] } } }
+      ]
+    },
+    {
+      "name": "RolesSistema",
+      "item": [
+        { "name": "GET /api/rolessistema", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rolessistema", "host": ["{{baseUrl}}"], "path": ["api","rolessistema"] } } },
+        { "name": "GET /api/rolessistema/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rolessistema/:id", "host": ["{{baseUrl}}"], "path": ["api","rolessistema",":id"] } } },
+        { "name": "POST /api/rolessistema", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"ROLE_ADMIN\", \"descripcion\": \"Admin\", \"esActivo\": true, \"nombre\": \"Administrador\" }"}, "url": {"raw":"{{baseUrl}}/api/rolessistema","host":["{{baseUrl}}"],"path":["api","rolessistema"]} } },
+        { "name": "PUT /api/rolessistema/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Admin mod\" }"}, "url": {"raw":"{{baseUrl}}/api/rolessistema/:id","host":["{{baseUrl}}"],"path":["api","rolessistema",":id"]} } },
+        { "name": "DELETE /api/rolessistema/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/rolessistema/:id", "host": ["{{baseUrl}}"], "path": ["api","rolessistema",":id"] } } }
+      ]
+    },
+    {
+      "name": "TipoSolicitudCatalogo",
+      "item": [
+        { "name": "GET /api/tiposolicitudcatalogo", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/tiposolicitudcatalogo", "host": ["{{baseUrl}}"], "path": ["api","tiposolicitudcatalogo"] } } },
+        { "name": "GET /api/tiposolicitudcatalogo/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/tiposolicitudcatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","tiposolicitudcatalogo",":id"] } } },
+        { "name": "POST /api/tiposolicitudcatalogo", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"TS01\", \"descripcion\": \"Tipo 1\" }"}, "url": {"raw":"{{baseUrl}}/api/tiposolicitudcatalogo","host":["{{baseUrl}}"],"path":["api","tiposolicitudcatalogo"]} } },
+        { "name": "PUT /api/tiposolicitudcatalogo/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Tipo mod\" }"}, "url": {"raw":"{{baseUrl}}/api/tiposolicitudcatalogo/:id","host":["{{baseUrl}}"],"path":["api","tiposolicitudcatalogo",":id"]} } },
+        { "name": "DELETE /api/tiposolicitudcatalogo/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/tiposolicitudcatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","tiposolicitudcatalogo",":id"] } } }
+      ]
+    },
+    {
+      "name": "TipoAlertaCatalogo",
+      "item": [
+        { "name": "GET /api/tipoalertacatalogo", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/tipoalertacatalogo", "host": ["{{baseUrl}}"], "path": ["api","tipoalertacatalogo"] } } },
+        { "name": "GET /api/tipoalertacatalogo/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/tipoalertacatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","tipoalertacatalogo",":id"] } } },
+        { "name": "POST /api/tipoalertacatalogo", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"TA01\", \"descripcion\": \"Alerta 1\" }"}, "url": {"raw":"{{baseUrl}}/api/tipoalertacatalogo","host":["{{baseUrl}}"],"path":["api","tipoalertacatalogo"]} } },
+        { "name": "PUT /api/tipoalertacatalogo/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Alerta mod\" }"}, "url": {"raw":"{{baseUrl}}/api/tipoalertacatalogo/:id","host":["{{baseUrl}}"],"path":["api","tipoalertacatalogo",":id"]} } },
+        { "name": "DELETE /api/tipoalertacatalogo/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/tipoalertacatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","tipoalertacatalogo",":id"] } } }
+      ]
+    },
+    {
+      "name": "EstadoSolicitudCatalogo",
+      "item": [
+        { "name": "GET /api/estadosolicitudcatalogo", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/estadosolicitudcatalogo", "host": ["{{baseUrl}}"], "path": ["api","estadosolicitudcatalogo"] } } },
+        { "name": "GET /api/estadosolicitudcatalogo/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/estadosolicitudcatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","estadosolicitudcatalogo",":id"] } } },
+        { "name": "POST /api/estadosolicitudcatalogo", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"EST01\", \"descripcion\": \"Abierto\" }"}, "url": {"raw":"{{baseUrl}}/api/estadosolicitudcatalogo","host":["{{baseUrl}}"],"path":["api","estadosolicitudcatalogo"]} } },
+        { "name": "PUT /api/estadosolicitudcatalogo/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Abierto mod\" }"}, "url": {"raw":"{{baseUrl}}/api/estadosolicitudcatalogo/:id","host":["{{baseUrl}}"],"path":["api","estadosolicitudcatalogo",":id"]} } },
+        { "name": "DELETE /api/estadosolicitudcatalogo/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/estadosolicitudcatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","estadosolicitudcatalogo",":id"] } } }
+      ]
+    },
+    {
+      "name": "EstadoAlertaCatalogo",
+      "item": [
+        { "name": "GET /api/estadoalertacatalogo", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/estadoalertacatalogo", "host": ["{{baseUrl}}"], "path": ["api","estadoalertacatalogo"] } } },
+        { "name": "GET /api/estadoalertacatalogo/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/estadoalertacatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","estadoalertacatalogo",":id"] } } },
+        { "name": "POST /api/estadoalertacatalogo", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"EA01\", \"descripcion\": \"Pendiente\" }"}, "url": {"raw":"{{baseUrl}}/api/estadoalertacatalogo","host":["{{baseUrl}}"],"path":["api","estadoalertacatalogo"]} } },
+        { "name": "PUT /api/estadoalertacatalogo/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Pendiente mod\" }"}, "url": {"raw":"{{baseUrl}}/api/estadoalertacatalogo/:id","host":["{{baseUrl}}"],"path":["api","estadoalertacatalogo",":id"]} } },
+        { "name": "DELETE /api/estadoalertacatalogo/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/estadoalertacatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","estadoalertacatalogo",":id"] } } }
+      ]
+    },
+    {
+      "name": "EstadoUsuarioCatalogo",
+      "item": [
+        { "name": "GET /api/estadousuariocatalogo", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/estadousuariocatalogo", "host": ["{{baseUrl}}"], "path": ["api","estadousuariocatalogo"] } } },
+        { "name": "GET /api/estadousuariocatalogo/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/estadousuariocatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","estadousuariocatalogo",":id"] } } },
+        { "name": "POST /api/estadousuariocatalogo", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"EU01\", \"descripcion\": \"Activo\" }"}, "url": {"raw":"{{baseUrl}}/api/estadousuariocatalogo","host":["{{baseUrl}}"],"path":["api","estadousuariocatalogo"]} } },
+        { "name": "PUT /api/estadousuariocatalogo/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Activo mod\" }"}, "url": {"raw":"{{baseUrl}}/api/estadousuariocatalogo/:id","host":["{{baseUrl}}"],"path":["api","estadousuariocatalogo",":id"]} } },
+        { "name": "DELETE /api/estadousuariocatalogo/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/estadousuariocatalogo/:id", "host": ["{{baseUrl}}"], "path": ["api","estadousuariocatalogo",":id"] } } }
+      ]
+    },
+    {
+      "name": "Permiso",
+      "item": [
+        { "name": "GET /api/permiso", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/permiso", "host": ["{{baseUrl}}"], "path": ["api","permiso"] } } },
+        { "name": "GET /api/permiso/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/permiso/:id", "host": ["{{baseUrl}}"], "path": ["api","permiso",":id"] } } },
+        { "name": "POST /api/permiso", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigo\": \"PERM1\", \"descripcion\": \"Permiso\", \"nombre\": \"Permiso1\" }"}, "url": {"raw":"{{baseUrl}}/api/permiso","host":["{{baseUrl}}"],"path":["api","permiso"]} } },
+        { "name": "PUT /api/permiso/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"Permiso mod\" }"}, "url": {"raw":"{{baseUrl}}/api/permiso/:id","host":["{{baseUrl}}"],"path":["api","permiso",":id"]} } },
+        { "name": "DELETE /api/permiso/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/permiso/:id", "host": ["{{baseUrl}}"], "path": ["api","permiso",":id"] } } }
+      ]
+    },
+    {
+      "name": "ConfigSla",
+      "item": [
+        { "name": "GET /api/configsla", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/configsla", "host": ["{{baseUrl}}"], "path": ["api","configsla"] } } },
+        { "name": "GET /api/configsla/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/configsla/:id", "host": ["{{baseUrl}}"], "path": ["api","configsla",":id"] } } },
+        { "name": "POST /api/configsla", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"codigoSla\": \"SLA1\", \"descripcion\": \"SLA 1\", \"diasUmbral\": 3, \"esActivo\": true, \"idTipoSolicitud\": 1, \"creadoPor\": 1 }"}, "url": {"raw":"{{baseUrl}}/api/configsla","host":["{{baseUrl}}"],"path":["api","configsla"]} } },
+        { "name": "PUT /api/configsla/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"descripcion\": \"SLA mod\" }"}, "url": {"raw":"{{baseUrl}}/api/configsla/:id","host":["{{baseUrl}}"],"path":["api","configsla",":id"]} } },
+        { "name": "DELETE /api/configsla/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/configsla/:id", "host": ["{{baseUrl}}"], "path": ["api","configsla",":id"] } } }
+      ]
+    },
+    {
+      "name": "Solicitud",
+      "item": [
+        { "name": "GET /api/solicitud", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/solicitud", "host": ["{{baseUrl}}"], "path": ["api","solicitud"] } } },
+        { "name": "GET /api/solicitud/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/solicitud/:id", "host": ["{{baseUrl}}"], "path": ["api","solicitud",":id"] } } },
+        { "name": "POST /api/solicitud", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"idPersonal\":1, \"idRolRegistro\":1, \"idSla\":1, \"idArea\":1, \"idEstadoSolicitud\":1, \"fechaSolicitud\": \"2025-01-01T00:00:00Z\", \"fechaIngreso\": \"2025-01-01T00:00:00Z\", \"numDiasSla\":2, \"resumenSla\":\"Resumen\", \"origenDato\":\"web\", \"creadoPor\":1 }"}, "url": {"raw":"{{baseUrl}}/api/solicitud","host":["{{baseUrl}}"],"path":["api","solicitud"]} } },
+        { "name": "PUT /api/solicitud/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"resumenSla\": \"Resumen mod\" }"}, "url": {"raw":"{{baseUrl}}/api/solicitud/:id","host":["{{baseUrl}}"],"path":["api","solicitud",":id"]} } },
+        { "name": "DELETE /api/solicitud/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/solicitud/:id", "host": ["{{baseUrl}}"], "path": ["api","solicitud",":id"] } } }
+      ]
+    },
+    {
+      "name": "Reporte",
+      "item": [
+        { "name": "GET /api/reporte", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/reporte", "host": ["{{baseUrl}}"], "path": ["api","reporte"] } } },
+        { "name": "GET /api/reporte/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/reporte/:id", "host": ["{{baseUrl}}"], "path": ["api","reporte",":id"] } } },
+        { "name": "POST /api/reporte", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"tipoReporte\": \"tipo\", \"formato\": \"pdf\", \"filtrosJson\": \"{}\", \"generadoPor\":1, \"rutaArchivo\": \"/files/r.pdf\", \"idSolicituds\": [1] }"}, "url": {"raw":"{{baseUrl}}/api/reporte","host":["{{baseUrl}}"],"path":["api","reporte"]} } },
+        { "name": "PUT /api/reporte/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"formato\": \"xlsx\" }"}, "url": {"raw":"{{baseUrl}}/api/reporte/:id","host":["{{baseUrl}}"],"path":["api","reporte",":id"]} } },
+        { "name": "DELETE /api/reporte/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/reporte/:id", "host": ["{{baseUrl}}"], "path": ["api","reporte",":id"] } } }
+      ]
+    },
+    {
+      "name": "Alertum",
+      "item": [
+        { "name": "GET /api/alertum", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/alertum", "host": ["{{baseUrl}}"], "path": ["api","alertum"] } } },
+        { "name": "GET /api/alertum/:id", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/alertum/:id", "host": ["{{baseUrl}}"], "path": ["api","alertum",":id"] } } },
+        { "name": "POST /api/alertum", "request": { "method": "POST", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"idSolicitud\":1, \"idTipoAlerta\":1, \"idEstadoAlerta\":1, \"nivel\":\"alto\", \"mensaje\":\"Prueba\", \"enviadoEmail\": false }"}, "url": {"raw":"{{baseUrl}}/api/alertum","host":["{{baseUrl}}"],"path":["api","alertum"]} } },
+        { "name": "PUT /api/alertum/:id", "request": { "method": "PUT", "header": [{"key":"Content-Type","value":"application/json"}], "body": {"mode":"raw","raw":"{ \"mensaje\": \"Prueba mod\" }"}, "url": {"raw":"{{baseUrl}}/api/alertum/:id","host":["{{baseUrl}}"],"path":["api","alertum",":id"]} } },
+        { "name": "DELETE /api/alertum/:id", "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/api/alertum/:id", "host": ["{{baseUrl}}"], "path": ["api","alertum",":id"] } } }
+      ]
+    }
+  ],
+  "protocolProfileBehavior": {}
+}
