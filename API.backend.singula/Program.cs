@@ -4,11 +4,17 @@ using Singula.Core.Infrastructure.Repositories;
 using Singula.Core.Infrastructure.Services;
 using Singula.Core.Core.Interfaces;
 using Singula.Core.Core.Interfaces.Services;
+using Singula.Core.Core.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration: allow a DefaultConnection in appsettings or environment
 var configuration = builder.Configuration;
+
+// Bind settings
+var emailSettings = new EmailSettings();
+configuration.GetSection("EmailSettings").Bind(emailSettings);
+builder.Services.AddSingleton(emailSettings);
 
 // Add services to the container.
 builder.Services.AddControllers();

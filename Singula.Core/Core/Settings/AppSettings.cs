@@ -5,6 +5,7 @@ namespace Singula.Core.Core.Settings;
 /// </summary>
 public class DatabaseSettings
 {
+    public DatabaseSettings() { }
     public string ConnectionString { get; set; } = string.Empty;
     public string DatabaseName { get; set; } = "TTCBD";
     public int CommandTimeout { get; set; } = 30;
@@ -16,6 +17,7 @@ public class DatabaseSettings
 /// </summary>
 public class EmailSettings
 {
+    public EmailSettings() { }
     public string SmtpServer { get; set; } = string.Empty;
     public int SmtpPort { get; set; } = 587;
     public string SenderEmail { get; set; } = string.Empty;
@@ -30,6 +32,7 @@ public class EmailSettings
 /// </summary>
 public class FileStorageSettings
 {
+    public FileStorageSettings() { }
     public string BasePath { get; set; } = "wwwroot/uploads";
     public long MaxFileSize { get; set; } = 10485760; // 10 MB
     public List<string> AllowedExtensions { get; set; } = new() { ".xlsx", ".xls" };
@@ -40,6 +43,7 @@ public class FileStorageSettings
 /// </summary>
 public class AlertaSettings
 {
+    public AlertaSettings() { }
     public decimal UmbralCritico { get; set; } = 50; // % de cumplimiento
     public decimal UmbralAdvertencia { get; set; } = 70;
     public bool EnviarEmailAutomatico { get; set; } = true;
@@ -51,6 +55,7 @@ public class AlertaSettings
 /// </summary>
 public class PrediccionSettings
 {
+    public PrediccionSettings() { }
     public int MinimoDatosHistoricos { get; set; } = 5;
     public int DiasPrediccionDefecto { get; set; } = 30;
     public decimal ConfianzaMinima { get; set; } = 0.6m;
