@@ -1,0 +1,6 @@
+@API.backend.singula_HostAddress = http://localhost:5261
+
+GET {{API.backend.singula_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
