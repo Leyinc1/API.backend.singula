@@ -23,8 +23,8 @@ Ejecución local
 4. Acceder a `http://localhost:{port}`. Si Swagger/OpenAPI está activado, se puede usar `http://localhost:{port}/swagger`.
 
 Autenticación
-- Si la API expone un endpoint de auth (por ejemplo `POST /api/auth/login`), use las credenciales para obtener un JWT.
-- Añada el header `Authorization: Bearer {token}` en las peticiones a endpoints protegidos.
+- Si la API expone un endpoint de autenticación (por ejemplo `POST /api/auth/login`), use las credenciales para obtener un JWT.
+- Añada el encabezado `Authorization: Bearer {token}` en las peticiones a endpoints protegidos.
 
 Formatos de petición y respuesta
 - Content-Type: `application/json`
@@ -73,7 +73,7 @@ Nota: Las rutas descritas son aproximadas; consulte los controladores en `API.ba
 - Endpoints para crear solicitudes, actualizar estado, consultar por filtros (por tipo, por estado, por usuario) y listar historiales.
 
 11) Reporte
-- Endpoints para generar y listar reportes. Generación puede devolver un `ruta_archivo` o similar para descargar el archivo.
+- Endpoints para generar y listar reportes. La generación puede devolver una `ruta_archivo` o similar para descargar el archivo.
 
 DTOs y modelos de entrada
 - Los DTOs se encuentran en `Singula.Core/Services/Dto/`.
