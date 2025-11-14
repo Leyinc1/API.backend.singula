@@ -1,79 +1,62 @@
 # Manual Técnico
 
-## Resumen
-Proyecto: `API.backend.singula` (.NET 10)
-Core: `Singula.Core` (entidades, repositorios, servicios, DTOs)
-ORM: Entity Framework Core + Npgsql (PostgreSQL)
-Autenticación: JWT (`Microsoft.AspNetCore.Authentication.JwtBearer`)
-Swagger: `Swashbuckle.AspNetCore` (habilitado en Development)
+Este documento proporciona información técnica sobre la arquitectura, configuración, despliegue y mantenimiento del proyecto `API.backend.singula`.
 
-## Estructura del proyecto
-- `API.backend.singula`
-  - `Program.cs` — configuración DI, DbContext, JWT, Swagger.
-  - `Controllers/` — controladores API que consumen servicios y devuelven DTOs.
-  - `appsettings.json` — `ConnectionStrings` y sección `Jwt`.
-- `Singula.Core`
-  - `Core/Entities` — entidades (scaffold).
-  - `Infrastructure/Data/ApplicationDbContext.cs` — DbContext.
-  - `Repositories/` — `IRepository<T>`, `EfRepository<T>`, repositorios específicos.
-  - `Services/` — `I*Service` y `*Service` por entidad.
-  - `Services/Dto/` — DTOs usados por las APIs.
+## Resumen del proyecto
+- Proyecto principal: `API.backend.singula` (API RESTful en ASP.NET Core, .NET 10).
+- Biblioteca de dominio y servicios: `Singula.Core`.
+- ORM: Entity Framework Core con `ApplicationDbContext`.
+- Estructura: controladores en `API.backend.singula/Controllers`, lógica de negocio en `Singula.Core/Services`, repositorios en `Singula.Core/Repositories`.
 
-## Principios de diseño
-- Repositorio genérico + implementación EF.
-- Servicios por entidad para encapsular lógica y mapeos.
-- Controladores ligeros: usan servicios y retornan DTOs.
-- Borrado lógico: si la entidad tiene `Estado` (string) o `EsActivo` (bool), `Delete` marca como inactivo; en caso contrario, borrado físico.
+## Requisitos
+- .NET 10 SDK
+- Base de datos (ajustar tipo según la cadena de conexión, comúnmente PostgreSQL en este proyecto)
 
-## Configuración importante
-- `appsettings.json`:
-  - `ConnectionStrings:DefaultConnection` — cadena PostgreSQL.
-  - `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience`, `Jwt:ExpiresMinutes`.
+## Estructura de carpetas
+- `API.backend.singula/` — Proyecto API (controllers, configuración, `appsettings.json`).
+- `Singula.Core/` — Lógica de negocio, entidades, DTOs, mapeos y repositorios.
+- `docs/` — Documentación del proyecto.
+- `postman/` — Colecciones Postman para pruebas.
 
-Ejemplo mínimo:
+## Entidades principales
+- Revisa `Singula.Core/Core/Entities` y `ApplicationDbContext` para el listado completo de entidades: `Usuario`, `Personal`, `Solicitud`, `Reporte`, `ConfigSla`, `Area`, `Permiso`, `RolesSistema`, etc.
 
-```json
-{
-  "ConnectionStrings": { "DefaultConnection": "Host=localhost;Database=TTCBD;Username=postgres;Password=123456789" },
-  "Jwt": { "Key":"super_secret_key_123!","Issuer":"singula","Audience":"singula_users","ExpiresMinutes":60 }
-}
-```
+## Repositorios y servicios
+- Repositorios en `Singula.Core/Repositories` (ej. `IUsuarioRepository`, `UsuarioRepository`, `EfRepository`).
+- Servicios en `Singula.Core/Services` implementan la lógica de negocio y usan repositorios. Los DTOs están en `Singula.Core/Services/Dto`.
 
-## Inyección de dependencias (resumen)
-Registrado en `Program.cs`:
-- `DbContext` (ApplicationDbContext)
-- `IRepository<>` -> `EfRepository<>`
-- Repositorios específicos (ej. `IUsuarioRepository`)
-- Servicios por entidad (`I*Service` -> `*Service`)
+## Mapeos
+- Se usa `AutoMapper` para mapear entre entidades y DTOs. Ver `Singula.Core/Mapping` para perfiles.
 
-## Endpoints principales
-- Autenticación: `POST /api/usuarios/authenticate` ? `{ token }`
-- CRUD por entidad en rutas `api/{entidad}` (retornan/reciben DTOs)
+## Configuración
+- `appsettings.json` contiene configuraciones. Use variables de entorno o secretos para datos sensibles.
+- Revisar `Program.cs` para middlewares configurados: CORS, autenticación, Swagger, logging.
 
-Ejemplos:
-- `GET /api/areas`
-- `POST /api/usuarios` (registro)
-- `POST /api/usuarios/authenticate` (login)
+## Autenticación y autorización
+- Si se usa JWT, la configuración está en `Program.cs` y `appsettings.json`. Proteja las claves y secretos.
 
-Todos los endpoints (excepto autenticación y, opcionalmente, registro) requieren header:
-```
-Authorization: Bearer <token>
-```
+## Despliegue
+- Publicar: `dotnet publish -c Release -o ./publish`
+- Ejecutar en servidor: `dotnet API.backend.singula.dll` o usar contenedor Docker.
 
-## DTOs
-Cada entidad dispone de un DTO en `Singula.Core/Services/Dto`. Las relaciones se representan por ids.
+## Pruebas
+- Añadir un proyecto de pruebas (xUnit/NUnit) para servicios y controladores.
 
-## Operaciones con la base de datos
-- No se crearon migrations automáticamente. Para generar migraciones y aplicar:
-  - `dotnet ef migrations add Initial --project Singula.Core --startup-project API.backend.singula`
-  - `dotnet ef database update --project Singula.Core --startup-project API.backend.singula`
+## Mantenimiento y recomendaciones
+- Mantener credenciales fuera del repositorio.
+- Añadir logging centralizado (Serilog) y tracing.
+- Implementar middleware de manejo de errores y validación (ProblemDetails).
+- Añadir Swagger/OpenAPI para documentación de endpoints.
+- Revisar y limpiar entidades generadas por scaffolding (propiedades duplicadas y campos con inicializadores incompletos como `=;`).
 
-## Recomendaciones
-- Añadir validación (DataAnnotations / FluentValidation) a DTOs.
-- Añadir middleware global de manejo de errores y logging.
-- Considerar AutoMapper para evitar mapeos manuales.
-- Proteger acciones por roles/claims si aplica.
+## Problemas comunes por scaffolding
+- El código generado puede contener duplicaciones en propiedades y colecciones (por ejemplo, propiedades repetidas con y sin inicializador `=;`).
+- Revise cada clase en `Singula.Core/Core/Entities` y corrija duplicaciones, asegure que las colecciones estén inicializadas correctamente.
 
----
+## Comandos útiles
+- `dotnet restore`
+- `dotnet build`
+- `dotnet run --project API.backend.singula/API.backend.singula.csproj`
+- `dotnet publish -c Release -o ./publish`
 
-Fecha: Generado automáticamente por el asistente de desarrollo.
+Fin del Manual Técnico.
