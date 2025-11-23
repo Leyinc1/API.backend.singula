@@ -52,6 +52,10 @@ public partial class Solicitud
     [StringLength(40)]
     public string? OrigenDato { get; set; }
 
+    [Column("prioridad")]
+    [StringLength(20)]
+    public string? Prioridad { get; set; }
+
     [Column("creado_por")]
     public int CreadoPor { get; set; }
 
