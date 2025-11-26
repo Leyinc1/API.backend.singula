@@ -3,6 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Singula.Core.Services;
 using Singula.Core.Services.Dto;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+using System;
+using Microsoft.AspNetCore.Hosting;
 
 namespace API.backend.singula.Controllers
 {
@@ -12,10 +16,12 @@ namespace API.backend.singula.Controllers
     public class ReporteController : ControllerBase
     {
         private readonly IReporteService _service;
+        private readonly IWebHostEnvironment _env;
 
-        public ReporteController(IReporteService service)
+        public ReporteController(IReporteService service, IWebHostEnvironment env)
         {
             _service = service;
+            _env = env;
         }
 
         [HttpGet]
@@ -54,6 +60,44 @@ namespace API.backend.singula.Controllers
             var ok = await _service.DeleteAsync(id);
             if (!ok) return NotFound();
             return NoContent();
+        }
+
+        /// <summary>
+        /// Endpoint para subir un archivo (PDF) y devolver la ruta relativa donde se guardó.
+        /// Guarda en wwwroot/reports y devuelve { ruta: "/reports/archivo.pdf" }
+        /// </summary>
+        [HttpPost("upload")]
+        public async Task<IActionResult> Upload([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No se recibió archivo");
+
+            try
+            {
+                var webRoot = _env.WebRootPath;
+                if (string.IsNullOrEmpty(webRoot))
+                {
+                    webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                }
+
+                var reportsDir = Path.Combine(webRoot, "reports");
+                if (!Directory.Exists(reportsDir)) Directory.CreateDirectory(reportsDir);
+
+                var safeFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(file.FileName);
+                var fullPath = Path.Combine(reportsDir, safeFileName);
+
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var relativePath = $"/reports/{safeFileName}";
+                return Ok(new { ruta = relativePath });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
     }
 }

@@ -127,11 +127,12 @@ namespace Singula.Core.Infrastructure.Data
 
                 if (rolAdmin != null && estadoActivo != null)
                 {
+                    // Use bcrypt hash for seeded admin password (password = "admin")
                     context.Usuarios.Add(new Usuario
                     {
                         Username = "admin",
                         Correo = "admin@singula.com",
-                        PasswordHash = "hash_password_admin",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
                         IdRolSistema = rolAdmin.IdRolSistema,
                         IdEstadoUsuario = estadoActivo.IdEstadoUsuario
                     });
@@ -139,11 +140,12 @@ namespace Singula.Core.Infrastructure.Data
 
                 if (rolUser != null && estadoActivo != null)
                 {
+                    // Use bcrypt hash for seeded rrhh password (password = "rrhh")
                     context.Usuarios.Add(new Usuario
                     {
                         Username = "rrhh",
                         Correo = "rrhh@singula.com",
-                        PasswordHash = "hash_password_rrhh",
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("rrhh"),
                         IdRolSistema = rolUser.IdRolSistema,
                         IdEstadoUsuario = estadoActivo.IdEstadoUsuario
                     });

@@ -76,8 +76,11 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:9000",
+            "https://localhost:9000",
+            "http://localhost:5192",
+            "https://localhost:5192",
             "http://localhost:3000",
-            "http://frontend:9000",
+            "https://localhost:7002",
             "http://frontend:3000"
         )
         .AllowAnyMethod()
@@ -119,7 +122,8 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 app.UseCors("AllowFrontend");
 
-app.UseHttpsRedirection();
+// Comment out HTTPS redirection in dev to avoid HTTP->HTTPS redirect breaking CORS preflight
+// app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

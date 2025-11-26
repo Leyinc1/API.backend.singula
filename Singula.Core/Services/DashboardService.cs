@@ -43,7 +43,11 @@ namespace Singula.Core.Services
                 query = query.Where(s => s.IdRolRegistroNavigation.BloqueTech == bloqueTech);
 
             if (!string.IsNullOrEmpty(tipoSolicitud))
+            {
+                // Filtrar por descripción del tipo de solicitud (ej: "Nuevo Personal", "Reemplazo")
+                // NOTA: El frontend puede enviar la descripción directamente
                 query = query.Where(s => s.IdSlaNavigation.IdTipoSolicitudNavigation.Descripcion == tipoSolicitud);
+            }
 
             if (!string.IsNullOrEmpty(prioridad))
                 query = query.Where(s => s.Prioridad == prioridad);
