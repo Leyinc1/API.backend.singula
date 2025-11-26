@@ -31,6 +31,7 @@ builder.Services.AddScoped<Singula.Core.Services.IAlertumService, Singula.Core.S
 builder.Services.AddScoped<Singula.Core.Services.IRolRegistroService, Singula.Core.Services.RolRegistroService>();
 builder.Services.AddScoped<Singula.Core.Services.IRolesSistemaService, Singula.Core.Services.RolesSistemaService>();
 builder.Services.AddScoped<Singula.Core.Services.ITipoSolicitudCatalogoService, Singula.Core.Services.TipoSolicitudCatalogoService>();
+builder.Services.AddScoped<Singula.Core.Services.IPrioridadCatalogoService, Singula.Core.Services.PrioridadCatalogoService>();
 builder.Services.AddScoped<Singula.Core.Services.IReporteService, Singula.Core.Services.ReporteService>();
 builder.Services.AddScoped<Singula.Core.Services.IConfigSlaService, Singula.Core.Services.ConfigSlaService>();
 builder.Services.AddScoped<Singula.Core.Services.ITipoAlertaCatalogoService, Singula.Core.Services.TipoAlertaCatalogoService>();

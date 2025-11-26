@@ -32,6 +32,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<Personal> Personals { get; set; }
 
+    public virtual DbSet<PrioridadCatalogo> PrioridadCatalogos { get; set; }
+
     public virtual DbSet<Reporte> Reportes { get; set; }
 
     public virtual DbSet<RolRegistro> RolRegistros { get; set; }
@@ -117,6 +119,12 @@ public partial class ApplicationDbContext : DbContext
             entity.Property(e => e.CreadoEn).HasDefaultValueSql("now()");
 
             entity.HasOne(d => d.IdUsuarioNavigation).WithOne(p => p.Personal).HasConstraintName("personal_id_usuario_fkey");
+        });
+
+        modelBuilder.Entity<PrioridadCatalogo>(entity =>
+        {
+            entity.HasKey(e => e.IdPrioridad).HasName("prioridad_catalogo_pkey");
+            entity.Property(e => e.Activo).HasDefaultValue(true);
         });
 
         modelBuilder.Entity<Reporte>(entity =>
