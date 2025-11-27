@@ -44,6 +44,11 @@ namespace API.backend.singula.Controllers
         {
             try
             {
+                // Logging para debug
+                Console.WriteLine($"[ReporteController] Create - GeneradoPor: {dto.GeneradoPor}, TipoReporte: {dto.TipoReporte}");
+                Console.WriteLine($"[ReporteController] FiltrosJson: {dto.FiltrosJson}");
+                Console.WriteLine($"[ReporteController] NombreArchivo: {dto.NombreArchivo}, RutaArchivo: {dto.RutaArchivo}");
+                
                 // Validar que generadoPor sea válido
                 if (dto.GeneradoPor <= 0)
                 {
@@ -55,6 +60,11 @@ namespace API.backend.singula.Controllers
             }
             catch (Exception ex)
             {
+                // Loggear excepción completa en consola
+                Console.WriteLine($"[ReporteController] ERROR: {ex.Message}");
+                Console.WriteLine($"[ReporteController] InnerException: {ex.InnerException?.Message}");
+                Console.WriteLine($"[ReporteController] StackTrace: {ex.StackTrace}");
+                
                 // Retornar mensaje de error detallado
                 var innerMsg = ex.InnerException?.Message ?? ex.Message;
                 return StatusCode(500, new { message = $"Error al crear el reporte: {innerMsg}" });

@@ -23,8 +23,8 @@ namespace Singula.Core.Services
                 Formato = dto.Formato,
                 FiltrosJson = dto.FiltrosJson,
                 GeneradoPor = dto.GeneradoPor,
-                FechaGeneracion = DateTime.Now,
-                RutaArchivo = dto.RutaArchivo
+                FechaGeneracion = DateTime.UtcNow, // UTC para PostgreSQL timestamptz
+                RutaArchivo = dto.NombreArchivo ?? dto.RutaArchivo // Usar nombreArchivo si está presente, sino rutaArchivo (compatibilidad)
             };
             var created = await _repo.CreateAsync(entity);
             return new ReporteDto {
