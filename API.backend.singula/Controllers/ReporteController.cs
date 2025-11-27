@@ -42,8 +42,23 @@ namespace API.backend.singula.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ReporteDto dto)
         {
-            var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.IdReporte }, created);
+            try
+            {
+                // Validar que generadoPor sea válido
+                if (dto.GeneradoPor <= 0)
+                {
+                    return BadRequest(new { message = "El campo GeneradoPor debe ser un ID de usuario válido" });
+                }
+
+                var created = await _service.CreateAsync(dto);
+                return CreatedAtAction(nameof(Get), new { id = created.IdReporte }, created);
+            }
+            catch (Exception ex)
+            {
+                // Retornar mensaje de error detallado
+                var innerMsg = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new { message = $"Error al crear el reporte: {innerMsg}" });
+            }
         }
 
         [HttpPut("{id}")]

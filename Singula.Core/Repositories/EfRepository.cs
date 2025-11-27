@@ -26,9 +26,18 @@ namespace Singula.Core.Repositories
 
         public virtual async Task<T> CreateAsync(T entity)
         {
-            _db.Set<T>().Add(entity);
-            await _db.SaveChangesAsync();
-            return entity;
+            try
+            {
+                _db.Set<T>().Add(entity);
+                await _db.SaveChangesAsync();
+                return entity;
+            }
+            catch (DbUpdateException ex)
+            {
+                // Loggear la excepción completa con detalles
+                var innerMsg = ex.InnerException?.Message ?? ex.Message;
+                throw new Exception($"Error al guardar entidad en BD: {innerMsg}", ex);
+            }
         }
 
         public virtual async Task<T?> UpdateAsync(T entity)

@@ -23,6 +23,7 @@ namespace Singula.Core.Services
                 Formato = dto.Formato,
                 FiltrosJson = dto.FiltrosJson,
                 GeneradoPor = dto.GeneradoPor,
+                FechaGeneracion = DateTime.Now,
                 RutaArchivo = dto.RutaArchivo
             };
             var created = await _repo.CreateAsync(entity);
