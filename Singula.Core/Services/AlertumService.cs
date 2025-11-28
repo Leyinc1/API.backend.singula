@@ -52,14 +52,14 @@ namespace Singula.Core.Services
                 string nuevoNivel = "";
 
                 // CALCULAR TIPO
-                if (diasRestantes <= 0) // ROJO
+                if (diasRestantes <= 0) // ROJO - INCUMPLIMIENTO
                 {
                     nuevoTipoAlerta = 2;
                     nuevoNivel = "Crítico";
                     int diasRetraso = Math.Abs(diasRestantes);
                     nuevoMensaje = $"Incumplimiento de {sol.IdSlaNavigation.CodigoSla} para {sol.IdRolRegistroNavigation.NombreRol}: {diasRetraso} días acumulados de retraso.";
                 }
-                else if (diasRestantes <= 10) // NARANJA
+                else if (diasRestantes <= 2) // NARANJA - POR VENCER (2 DÍAS O MENOS)
                 {
                     nuevoTipoAlerta = 1;
                     nuevoNivel = "Alto";
