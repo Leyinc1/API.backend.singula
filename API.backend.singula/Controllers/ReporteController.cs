@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // [Authorize] // Comentado temporalmente para desarrollo
     public class ReporteController : ControllerBase
     {
         private readonly IReporteService _service;

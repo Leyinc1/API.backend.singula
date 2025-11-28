@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize] // Restaurado para producción
     public class AreasController : ControllerBase
     {
         private readonly IAreaService _service;

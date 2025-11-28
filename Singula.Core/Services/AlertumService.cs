@@ -9,11 +9,13 @@ namespace Singula.Core.Services
 {
     public class AlertumService : IAlertumService
     {
-        private readonly IRepository<Alertum> _repo;
+        private readonly IRepository<Alertum> _repo; // generic for basic ops
+        private readonly IAlertumRepository _alertRepo; // specialized queries
 
-        public AlertumService(IRepository<Alertum> repo)
+        public AlertumService(IRepository<Alertum> repo, IAlertumRepository alertRepo)
         {
             _repo = repo;
+            _alertRepo = alertRepo;
         }
 
         public async Task<AlertumDto> CreateAsync(AlertumDto dto)
@@ -94,6 +96,19 @@ namespace Singula.Core.Services
             e.ActualizadoEn = dto.ActualizadoEn;
             await _repo.UpdateAsync(e);
             return dto;
+        }
+
+        // New delegating methods
+        public async Task<IEnumerable<AlertumDto>> GetByUserAsync(int userId, bool onlyUnread = false, int page = 1, int pageSize = 20)
+            => await _alertRepo.GetByUserAsync(userId, onlyUnread, page, pageSize);
+
+        public async Task<int> GetUnreadCountByUserAsync(int userId)
+            => await _alertRepo.GetUnreadCountByUserAsync(userId);
+
+        public async Task<bool> MarkAsReadAsync(int alertId, int userId)
+        {
+            var updated = await _alertRepo.MarkAsReadAsync(alertId, userId);
+            return updated != null;
         }
     }
 }
