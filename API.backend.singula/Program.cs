@@ -42,6 +42,17 @@ builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
 
+// Add CORS policy to allow any origin
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAny", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 // JWT
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = jwtSection["Key"];
@@ -120,6 +131,9 @@ using (var scope = app.Services.CreateScope())
 app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors("AllowAny");
 
 app.UseAuthentication();
 app.UseAuthorization();
