@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using System;
 using Microsoft.AspNetCore.Hosting;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace API.backend.singula.Controllers
 {
@@ -17,11 +19,13 @@ namespace API.backend.singula.Controllers
     {
         private readonly IReporteService _service;
         private readonly IWebHostEnvironment _env;
+        private readonly IDashboardService _dashboardService;
 
-        public ReporteController(IReporteService service, IWebHostEnvironment env)
+        public ReporteController(IReporteService service, IWebHostEnvironment env, IDashboardService dashboardService)
         {
             _service = service;
             _env = env;
+            _dashboardService = dashboardService;
         }
 
         [HttpGet]
@@ -85,6 +89,66 @@ namespace API.backend.singula.Controllers
             var ok = await _service.DeleteAsync(id);
             if (!ok) return NotFound();
             return NoContent();
+        }
+
+        /// <summary>
+        /// Endpoint específico para obtener datos de dashboard para reportes.
+        /// Filtra por fecha de INGRESO (no por fecha de solicitud) y por tipo de solicitud.
+        /// Query params: startDate, endDate, tipoSolicitud (ej: "SLA1", "SLA2")
+        /// </summary>
+        [HttpGet("dashboard-data")]
+        public async Task<IActionResult> GetDashboardData(
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] string? tipoSolicitud = null)
+        {
+            try
+            {
+                Console.WriteLine($"[ReporteController] GetDashboardData - Start: {startDate}, End: {endDate}, Tipo: {tipoSolicitud}");
+                
+                // Obtener TODOS los datos sin filtro de bloqueTech (se filtra en frontend)
+                var allData = await _dashboardService.GetDashboardDataAsync(
+                    startDate: null,  // NO filtrar por fecha en DashboardService
+                    endDate: null,    // Filtraremos manualmente después
+                    bloqueTech: null,
+                    tipoSolicitud: tipoSolicitud,
+                    prioridad: null,
+                    cumpleSla: null
+                );
+
+                Console.WriteLine($"[ReporteController] Total datos del servicio: {allData.Count()}");
+
+                // Ajustar endDate para incluir TODO el día (hasta 23:59:59)
+                DateTime? adjustedEndDate = endDate.HasValue 
+                    ? endDate.Value.Date.AddDays(1).AddTicks(-1) 
+                    : null;
+
+                Console.WriteLine($"[ReporteController] Adjusted End Date: {adjustedEndDate}");
+
+                // Filtrar por rango de fechas usando FechaIngreso (fecha de finalización)
+                var filteredData = allData.Where(s => {
+                    // Si no hay FechaIngreso, usar FechaSolicitud como fallback
+                    var fechaParaComparar = s.FechaIngreso ?? s.FechaSolicitud;
+                    
+                    if (!fechaParaComparar.HasValue) return false;
+                    
+                    bool cumpleFechaInicio = !startDate.HasValue || fechaParaComparar.Value.Date >= startDate.Value.Date;
+                    bool cumpleFechaFin = !adjustedEndDate.HasValue || fechaParaComparar.Value <= adjustedEndDate.Value;
+                    
+                    return cumpleFechaInicio && cumpleFechaFin;
+                }).ToList();
+
+                // Log para debug
+                Console.WriteLine($"[ReporteController] DashboardData - Total: {allData.Count()}, Filtrado: {filteredData.Count}");
+                Console.WriteLine($"[ReporteController] Filtros - Start: {startDate}, End: {endDate}, Tipo: {tipoSolicitud}");
+
+                return Ok(filteredData);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ReporteController] ERROR en GetDashboardData: {ex.Message}");
+                return StatusCode(500, new { message = $"Error al obtener datos: {ex.Message}" });
+            }
         }
 
         /// <summary>
