@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace Singula.Core.Services
 {
@@ -17,63 +18,64 @@ namespace Singula.Core.Services
         private readonly IRepository<RolRegistro> _rolRepo;
         private readonly IRepository<ConfigSla> _slaRepo;
         private readonly IRepository<EstadoSolicitudCatalogo> _estadoRepo;
+        private readonly ILogger<ExcelImportService> _logger;
 
-        // Mapeo de columnas del Excel a propiedades (normalizado a lowercase para comparación)
-        private static readonly Dictionary<string, string> ColumnMapping = new(StringComparer.OrdinalIgnoreCase)
+        // Mapeo de columnas del Excel a propiedades (case-insensitive, solo una variante por campo)
+        private static Dictionary<string, string> GetColumnMapping()
         {
-            // Area (reemplaza BloqueTech)
-            { "area", "Area" },
-            { "área", "Area" },
-            { "AREA", "Area" },
-            { "ÁREA", "Area" },
-            
-            // TipoSolicitud
-            { "tipo de solicitud", "TipoSolicitud" },
-            { "tipo_solicitud", "TipoSolicitud" },
-            { "tiposolicitud", "TipoSolicitud" },
-            { "tipo solicitud", "TipoSolicitud" },
-            { "tipo de sla", "TipoSolicitud" },
-            { "tipo_sla", "TipoSolicitud" },
-            { "tiposla", "TipoSolicitud" },
-            
-            // Prioridad
-            { "prioridad", "Prioridad" },
-            
-            // FechaSolicitud
-            { "fecha solicitud", "FechaSolicitud" },
-            { "fecha_solicitud", "FechaSolicitud" },
-            { "fechasolicitud", "FechaSolicitud" },
-            
-            // FechaIngreso
-            { "fecha de ingreso", "FechaIngreso" },
-            { "fecha_ingreso", "FechaIngreso" },
-            { "fechaingreso", "FechaIngreso" },
-            { "fecha ingreso", "FechaIngreso" },
-            
-            // NombrePersonal
-            { "nombre personal", "NombrePersonal" },
-            { "nombre_personal", "NombrePersonal" },
-            { "nombrepersonal", "NombrePersonal" },
-            
-            // Eficacia
-            { "eficacia", "Eficacia" },
-            
-            // Observaciones
-            { "observaciones", "Observaciones" }
-        };
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                // Area (reemplaza BloqueTech) - StringComparer.OrdinalIgnoreCase maneja mayúsculas/minúsculas automáticamente
+                { "area", "Area" },
+                { "área", "Area" },
+                
+                // TipoSolicitud
+                { "tipo de solicitud", "TipoSolicitud" },
+                { "tipo_solicitud", "TipoSolicitud" },
+                { "tiposolicitud", "TipoSolicitud" },
+                { "tipo solicitud", "TipoSolicitud" },
+                { "tipo de sla", "TipoSolicitud" },
+                { "tipo_sla", "TipoSolicitud" },
+                { "tiposla", "TipoSolicitud" },
+                
+                // Prioridad
+                { "prioridad", "Prioridad" },
+                
+                // FechaSolicitud
+                { "fecha solicitud", "FechaSolicitud" },
+                { "fecha_solicitud", "FechaSolicitud" },
+                { "fechasolicitud", "FechaSolicitud" },
+                
+                // FechaIngreso
+                { "fecha de ingreso", "FechaIngreso" },
+                { "fecha_ingreso", "FechaIngreso" },
+                { "fechaingreso", "FechaIngreso" },
+                { "fecha ingreso", "FechaIngreso" },
+                
+                // NombrePersonal
+                { "nombre personal", "NombrePersonal" },
+                { "nombre_personal", "NombrePersonal" },
+                { "nombrepersonal", "NombrePersonal" },
+                
+                // Observaciones
+                { "observaciones", "Observaciones" }
+            };
+        }
 
         public ExcelImportService(
             IRepository<Solicitud> solicitudRepo,
             IRepository<Area> areaRepo,
             IRepository<RolRegistro> rolRepo,
             IRepository<ConfigSla> slaRepo,
-            IRepository<EstadoSolicitudCatalogo> estadoRepo)
+            IRepository<EstadoSolicitudCatalogo> estadoRepo,
+            ILogger<ExcelImportService> logger)
         {
             _solicitudRepo = solicitudRepo;
             _areaRepo = areaRepo;
             _rolRepo = rolRepo;
             _slaRepo = slaRepo;
             _estadoRepo = estadoRepo;
+            _logger = logger;
         }
 
         public async Task<ExcelImportResult> ImportFromExcelAsync(string filePath)
@@ -101,17 +103,35 @@ namespace Singula.Core.Services
 
                 using var workbook = new XLWorkbook(filePath);
                 var worksheet = workbook.Worksheets.First();
+                
+                _logger.LogInformation("📄 Excel abierto, leyendo encabezados...");
 
                 // Obtener la fila de encabezados
                 var headerRow = worksheet.Row(1);
                 var columnIndices = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var columnMapping = GetColumnMapping();
 
                 foreach (var cell in headerRow.CellsUsed())
                 {
                     var headerValue = cell.GetString().Trim();
-                    if (ColumnMapping.ContainsKey(headerValue))
+                    if (columnMapping.ContainsKey(headerValue))
                     {
-                        columnIndices[ColumnMapping[headerValue]] = cell.Address.ColumnNumber;
+                        var mappedName = columnMapping[headerValue];
+                        
+                        // Evitar duplicados - solo tomar la primera ocurrencia
+                        if (!columnIndices.ContainsKey(mappedName))
+                        {
+                            columnIndices[mappedName] = cell.Address.ColumnNumber;
+                            _logger.LogInformation($"✅ Columna encontrada: '{headerValue}' → {mappedName}");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"⚠️ Columna duplicada ignorada: '{headerValue}' (ya mapeada como {mappedName})");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"⚠️ Columna no reconocida: '{headerValue}'");
                     }
                 }
 
@@ -122,12 +142,17 @@ namespace Singula.Core.Services
                 {
                     result.Success = false;
                     result.Message = $"Columnas requeridas no encontradas: {string.Join(", ", missingColumns)}";
+                    _logger.LogError($"❌ {result.Message}");
                     return result;
                 }
+                
+                _logger.LogInformation($"✅ Todas las columnas requeridas encontradas");
 
                 // Procesar filas de datos
                 var dataRows = worksheet.RowsUsed().Skip(1); // Skip header
                 result.TotalRows = dataRows.Count();
+                
+                _logger.LogInformation($"📊 Total de filas a procesar: {result.TotalRows}");
 
                 foreach (var row in dataRows)
                 {
@@ -139,6 +164,7 @@ namespace Singula.Core.Services
                         {
                             result.FailedRows++;
                             result.Errors.Add($"Fila {row.RowNumber()}: AREA está vacía");
+                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: AREA vacía");
                             continue;
                         }
 
@@ -164,12 +190,8 @@ namespace Singula.Core.Services
                             IdSla = sla?.IdSla ?? 1,
                             IdArea = area?.IdArea ?? 1,
                             IdEstadoSolicitud = estadoPendiente?.IdEstadoSolicitud ?? 1,
-                            FechaSolicitud = rowData.FechaSolicitud.HasValue 
-                                ? DateTime.SpecifyKind(rowData.FechaSolicitud.Value, DateTimeKind.Utc) 
-                                : null,
-                            FechaIngreso = rowData.FechaIngreso.HasValue 
-                                ? DateTime.SpecifyKind(rowData.FechaIngreso.Value, DateTimeKind.Utc) 
-                                : null,
+                            FechaSolicitud = rowData.FechaSolicitud,
+                            FechaIngreso = rowData.FechaIngreso,
                             NumDiasSla = diasSla,
                             ResumenSla = $"{rowData.TipoSolicitud} - {rowData.Area}",
                             OrigenDato = "excel",
@@ -178,13 +200,16 @@ namespace Singula.Core.Services
                             CreadoEn = DateTime.UtcNow
                         };
 
+                        _logger.LogInformation($"💾 Insertando fila {row.RowNumber()}: {rowData.Area} - {rowData.FechaSolicitud}");
                         await _solicitudRepo.CreateAsync(solicitud);
                         result.ImportedRows++;
+                        _logger.LogInformation($"✅ Fila {row.RowNumber()} insertada exitosamente");
                     }
                     catch (Exception ex)
                     {
                         result.FailedRows++;
                         result.Errors.Add($"Fila {row.RowNumber()}: {ex.Message}");
+                        _logger.LogError(ex, $"❌ Error en fila {row.RowNumber()}: {ex.Message}");
                     }
                 }
 
@@ -195,6 +220,8 @@ namespace Singula.Core.Services
                 {
                     result.Message += $" ({result.FailedRows} errores)";
                 }
+                
+                _logger.LogInformation($"📊 Resultado: {result.Message}");
 
                 return result;
             }
@@ -229,9 +256,6 @@ namespace Singula.Core.Services
             if (columnIndices.TryGetValue("NombrePersonal", out int nombreCol))
                 data.NombrePersonal = row.Cell(nombreCol).GetString()?.Trim();
 
-            if (columnIndices.TryGetValue("Eficacia", out int eficaciaCol))
-                data.Eficacia = row.Cell(eficaciaCol).GetString()?.Trim();
-
             if (columnIndices.TryGetValue("Observaciones", out int obsCol))
                 data.Observaciones = row.Cell(obsCol).GetString()?.Trim();
 
@@ -242,10 +266,13 @@ namespace Singula.Core.Services
         {
             if (cell.IsEmpty()) return null;
 
+            DateTime parsedDate;
+
             // Intentar obtener como DateTime directamente (formato Excel)
             if (cell.DataType == XLDataType.DateTime)
             {
-                return cell.GetDateTime();
+                parsedDate = cell.GetDateTime();
+                return DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
             }
 
             // Intentar parsear como string
@@ -265,16 +292,16 @@ namespace Singula.Core.Services
             foreach (var format in formats)
             {
                 if (DateTime.TryParseExact(dateStr, format, CultureInfo.InvariantCulture, 
-                    DateTimeStyles.None, out var date))
+                    DateTimeStyles.None, out parsedDate))
                 {
-                    return date;
+                    return DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
                 }
             }
 
             // Intentar parse general
-            if (DateTime.TryParse(dateStr, out var generalDate))
+            if (DateTime.TryParse(dateStr, out parsedDate))
             {
-                return generalDate;
+                return DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
             }
 
             return null;
@@ -341,7 +368,6 @@ namespace Singula.Core.Services
             public DateTime? FechaSolicitud { get; set; }
             public DateTime? FechaIngreso { get; set; }
             public string? NombrePersonal { get; set; }
-            public string? Eficacia { get; set; }
             public string? Observaciones { get; set; }
         }
     }
