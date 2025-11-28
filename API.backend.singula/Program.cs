@@ -120,6 +120,36 @@ builder.WebHost.UseUrls("http://0.0.0.0:5192", "https://0.0.0.0:7002");
 
 var app = builder.Build();
 
+// Seed DB with retry logic
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    int retries = 0;
+    int maxRetries = 10;
+    
+    while (retries < maxRetries)
+    {
+        try
+        {
+            SeedData.EnsureSeedData(db);
+            break;
+        }
+        catch (Exception ex)
+        {
+            retries++;
+            if (retries >= maxRetries)
+            {
+                Console.WriteLine($"Failed to seed database after {maxRetries} attempts: {ex.Message}");
+                throw;
+            }
+            System.Threading.Thread.Sleep(2000); // Wait 2 seconds before retry
+            Console.WriteLine($"Database not ready, retrying... ({retries}/{maxRetries})");
+        }
+    }
+}
+
+// Configure the HTTP request pipeline.
+// app.UseCors("AllowFrontend");
 // ===============================================
 // SWAGGER siempre disponible
 // ===============================================

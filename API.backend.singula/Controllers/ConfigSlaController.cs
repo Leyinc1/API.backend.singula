@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Restaurado para producción
+    // [Authorize]
     public class ConfigSlaController : ControllerBase
     {
         private readonly IConfigSlaService _service;
