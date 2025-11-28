@@ -116,7 +116,7 @@ namespace API.backend.singula.Controllers
         }
 
         [HttpPut("marcar-leida/{id}")]
-        [Authorize] 
+        [AllowAnonymous] // TODO: Cambiar a [Authorize] en producción
         public async Task<IActionResult> MarcarComoLeida(int id)
         {
             var alerta = await _context.Alerta.FindAsync(id);
@@ -136,7 +136,7 @@ namespace API.backend.singula.Controllers
         }
 
         [HttpPut("marcar-todos-incumplimientos")]
-        [Authorize]
+        [AllowAnonymous] // TODO: Cambiar a [Authorize] en producción
         public async Task<IActionResult> MarcarTodosIncumplimientos()
         {
             // Buscamos todas las alertas que sean:

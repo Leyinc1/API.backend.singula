@@ -43,11 +43,20 @@ namespace Singula.Core.Services
                                     s.IdEstadoSolicitudNavigation.Codigo != "EST_CANC")
                         .ToListAsync();
 
-                    // 2. TRAER TODAS LAS ALERTAS (con AsNoTracking inicialmente)
-                    var alertasExistentesData = await context.Alerta
-                        .AsNoTracking()
-                        .Select(a => new { a.IdAlerta, a.IdSolicitud, a.IdTipoAlerta, a.IdEstadoAlerta })
-                        .ToListAsync();
+                // CALCULAR TIPO
+                if (diasRestantes <= 0) // ROJO - INCUMPLIMIENTO
+                {
+                    nuevoTipoAlerta = 2;
+                    nuevoNivel = "Crítico";
+                    int diasRetraso = Math.Abs(diasRestantes);
+                    nuevoMensaje = $"Incumplimiento de {sol.IdSlaNavigation.CodigoSla} para {sol.IdRolRegistroNavigation.NombreRol}: {diasRetraso} días acumulados de retraso.";
+                }
+                else if (diasRestantes <= 2) // NARANJA - POR VENCER (2 DÍAS O MENOS)
+                {
+                    nuevoTipoAlerta = 1;
+                    nuevoNivel = "Alto";
+                    nuevoMensaje = $"La solicitud de {sol.IdSlaNavigation.CodigoSla} para {sol.IdRolRegistroNavigation.NombreRol} está por vencer en: {diasRestantes} días.";
+                }
 
                     // Crear diccionario para búsqueda eficiente
                     var alertasDict = alertasExistentesData.ToDictionary(a => a.IdSolicitud);
