@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -79,7 +79,17 @@ builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
 
-// ===============================================
+// Add CORS policy to allow any origin
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAny", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 // JWT
 // ===============================================
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -101,18 +111,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     };
 });
 
-// ===============================================
-// CORS
-// ===============================================
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
+
 
 // ===============================================
 // Kestrel: PUERTOS FIJOS
@@ -131,6 +130,9 @@ app.UseSwaggerUI();
 
 app.UseCors("AllowFrontend");
 app.UseStaticFiles();
+
+// Enable CORS
+app.UseCors("AllowAny");
 
 app.UseAuthentication();
 app.UseAuthorization();
