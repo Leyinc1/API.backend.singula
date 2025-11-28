@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // [Authorize]
     public class SolicitudController : ControllerBase
     {
         private readonly ISolicitudService _service;
