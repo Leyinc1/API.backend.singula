@@ -14,28 +14,37 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // ===============================================
-// SWAGGER + Soporte para IFormFile (multipart/form-data)
+// SWAGGER + Soporte para IFormFile + CORS
 // ===============================================
-builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddEndpointsApiExplorer(); // De Master
+
+// 1. CONFIGURACIÓN DE CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWebApp",
+        policy => policy
+            .AllowAnyOrigin()   // Permite conexiones desde cualquier puerto
+            .AllowAnyMethod()   // Permite GET, POST, PUT, DELETE
+            .AllowAnyHeader()); // Permite enviar Tokens en la cabecera
+});
+
+builder.Services.AddOptions(); // De Feature
 
 builder.Services.AddSwaggerGen(options =>
 {
-    // Un título simple
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Singula API",
         Version = "v1"
     });
 
-    // --- 🔥 Esto ES LO MÁS IMPORTANTE ---
-    // Permite mostrar correctamente archivos en Swagger
+    // Soporte para archivos en Swagger
     options.MapType<IFormFile>(() => new OpenApiSchema
     {
         Type = "string",
         Format = "binary"
     });
 
-    // Para que Swagger entienda multipart/form-data
     options.SupportNonNullableReferenceTypes();
 });
 
@@ -56,7 +65,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 );
 
 // ===============================================
-// REPOS + SERVICES (todos los que ya tenías)
+// REPOS + SERVICES
 // ===============================================
 builder.Services.AddScoped(typeof(Singula.Core.Repositories.IRepository<>), typeof(Singula.Core.Repositories.EfRepository<>));
 builder.Services.AddScoped<Singula.Core.Repositories.IUsuarioRepository, Singula.Core.Repositories.UsuarioRepository>();
@@ -80,18 +89,7 @@ builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
 
-// Add CORS policy to allow any origin
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAny", builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
-
-// JWT
+// JWT AUTHENTICATION
 // ===============================================
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = jwtSection["Key"];
@@ -111,8 +109,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
     };
 });
-
-
 
 // ===============================================
 // Kestrel: PUERTOS FIJOS
@@ -143,30 +139,31 @@ using (var scope = app.Services.CreateScope())
                 Console.WriteLine($"Failed to seed database after {maxRetries} attempts: {ex.Message}");
                 throw;
             }
-            System.Threading.Thread.Sleep(2000); // Wait 2 seconds before retry
+            System.Threading.Thread.Sleep(2000); 
             Console.WriteLine($"Database not ready, retrying... ({retries}/{maxRetries})");
         }
     }
 }
 
-// Configure the HTTP request pipeline.
-// app.UseCors("AllowFrontend");
 // ===============================================
-// SWAGGER siempre disponible
+// HTTP REQUEST PIPELINE
 // ===============================================
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Opcional, según tu entorno
 
-app.UseCors("AllowFrontend");
 app.UseStaticFiles();
 
-// Enable CORS
-app.UseCors("AllowAny");
+// 2. ACTIVACIÓN DE CORS
+// IMPORTANTE: Debe ir ANTES de UseAuthentication y UseAuthorization
+// Usamos la política "AllowWebApp" definida arriba que permite todo
+app.UseCors("AllowWebApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();
