@@ -53,11 +53,11 @@ public partial class Solicitud
     public string? OrigenDato { get; set; }
 
     [Column("prioridad")]
-    [StringLength(20)]
+    [StringLength(50)]
     public string? Prioridad { get; set; }
 
     [Column("creado_por")]
-    public int CreadoPor { get; set; }
+    public int? CreadoPor { get; set; }
 
     [Column("creado_en")]
     public DateTime? CreadoEn { get; set; }
@@ -77,7 +77,7 @@ public partial class Solicitud
 
     [ForeignKey("CreadoPor")]
     [InverseProperty("SolicitudCreadoPorNavigations")]
-    public virtual Usuario CreadoPorNavigation { get; set; } = null!;
+    public virtual Usuario? CreadoPorNavigation { get; set; }
 
     [ForeignKey("IdArea")]
     [InverseProperty("Solicituds")]
