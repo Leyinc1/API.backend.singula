@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace API.backend.singula.Controllers
 {
-    [Authorize]
+    // [Authorize] // Comentado temporalmente para desarrollo
     [ApiController]
     [Route("api/[controller]")]
     public class BaseCrudController<TEntity> : ControllerBase where TEntity : class
