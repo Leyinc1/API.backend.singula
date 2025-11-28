@@ -1,30 +1,67 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Singula.Core.Infrastructure.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ===============================================
+// CONTROLLERS
+// ===============================================
 builder.Services.AddControllers();
 
-// Configuration
-builder.Services.AddOptions();
+// ===============================================
+// SWAGGER + Soporte para IFormFile (multipart/form-data)
+// ===============================================
+builder.Services.AddEndpointsApiExplorer();
 
-// DbContext
+builder.Services.AddSwaggerGen(options =>
+{
+    // Un título simple
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Singula API",
+        Version = "v1"
+    });
+
+    // --- 🔥 Esto ES LO MÁS IMPORTANTE ---
+    // Permite mostrar correctamente archivos en Swagger
+    options.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
+
+    // Para que Swagger entienda multipart/form-data
+    options.SupportNonNullableReferenceTypes();
+});
+
+// ===============================================
+// LIMITE DE SUBIDA (50 MB)
+// ===============================================
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50_000_000; // 50MB
+});
+
+// ===============================================
+// DATABASE
+// ===============================================
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(conn)
 );
 
-// Generic repository registration
+// ===============================================
+// REPOS + SERVICES (todos los que ya tenías)
+// ===============================================
 builder.Services.AddScoped(typeof(Singula.Core.Repositories.IRepository<>), typeof(Singula.Core.Repositories.EfRepository<>));
-
-// Repositories / Services DI (specific)
 builder.Services.AddScoped<Singula.Core.Repositories.IUsuarioRepository, Singula.Core.Repositories.UsuarioRepository>();
+builder.Services.AddScoped<Singula.Core.Repositories.IAlertumRepository, Singula.Core.Repositories.AlertumRepository>();
 
-// Domain services registration
 builder.Services.AddScoped<Singula.Core.Services.IUsuarioService, Singula.Core.Services.UsuarioService>();
 builder.Services.AddScoped<Singula.Core.Services.IAreaService, Singula.Core.Services.AreaService>();
 builder.Services.AddScoped<Singula.Core.Services.IAlertumService, Singula.Core.Services.AlertumService>();
@@ -43,20 +80,25 @@ builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
 
+// Add CORS policy to allow any origin
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAny", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 // JWT
+// ===============================================
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = jwtSection["Key"];
 var issuer = jwtSection["Issuer"];
 var audience = jwtSection["Audience"];
 
-if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(issuer) || string.IsNullOrEmpty(audience))
-    throw new Exception("JWT not configured in appsettings.json");
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -70,22 +112,12 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// CORS Configuration
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            "http://localhost:9000",
-            "http://localhost:3000",
-            "http://frontend:9000",
-            "http://frontend:3000"
-        )
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials();
-    });
-});
+
+
+// ===============================================
+// Kestrel: PUERTOS FIJOS
+// ===============================================
+builder.WebHost.UseUrls("http://0.0.0.0:5192", "https://0.0.0.0:7002");
 
 var app = builder.Build();
 
@@ -118,13 +150,23 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
-app.UseCors("AllowFrontend");
+// app.UseCors("AllowFrontend");
+// ===============================================
+// SWAGGER siempre disponible
+// ===============================================
+app.UseSwagger();
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
+
+app.UseCors("AllowFrontend");
+app.UseStaticFiles();
+
+// Enable CORS
+app.UseCors("AllowAny");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();
