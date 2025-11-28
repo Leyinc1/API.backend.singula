@@ -4,6 +4,8 @@ using Singula.Core.Core.Entities;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Npgsql;
+using System;
 
 namespace Singula.Core.Services
 {
@@ -18,27 +20,69 @@ namespace Singula.Core.Services
 
         public async Task<TipoSolicitudCatalogoDto> CreateAsync(TipoSolicitudCatalogoDto dto)
         {
-            var entity = new TipoSolicitudCatalogo { Codigo = dto.Codigo, Descripcion = dto.Descripcion };
+            var entity = new TipoSolicitudCatalogo 
+            { 
+                Codigo = dto.Codigo, 
+                Descripcion = dto.Descripcion,
+                Activo = dto.Activo
+            };
             var created = await _repo.CreateAsync(entity);
-            return new TipoSolicitudCatalogoDto { IdTipoSolicitud = created.IdTipoSolicitud, Codigo = created.Codigo, Descripcion = created.Descripcion };
+            return new TipoSolicitudCatalogoDto 
+            { 
+                IdTipoSolicitud = created.IdTipoSolicitud, 
+                Codigo = created.Codigo, 
+                Descripcion = created.Descripcion,
+                Activo = created.Activo
+            };
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            return await _repo.DeleteAsync(id);
+            try
+            {
+                return await _repo.DeleteAsync(id);
+            }
+            catch (Exception ex)
+            {
+                // Verificar si es un error de foreign key constraint
+                if (ex.InnerException is PostgresException pgEx)
+                {
+                    if (pgEx.SqlState == "23503") // Foreign key violation
+                    {
+                        throw new InvalidOperationException(
+                            "No se puede eliminar este tipo de solicitud porque existen solicitudes asociadas a él. " +
+                            "Considere desactivarlo en lugar de eliminarlo.",
+                            ex
+                        );
+                    }
+                }
+                throw; // Re-lanzar otros errores
+            }
         }
 
         public async Task<IEnumerable<TipoSolicitudCatalogoDto>> GetAllAsync()
         {
             var list = await _repo.GetAllAsync();
-            return list.Select(t => new TipoSolicitudCatalogoDto { IdTipoSolicitud = t.IdTipoSolicitud, Codigo = t.Codigo, Descripcion = t.Descripcion });
+            return list.Select(t => new TipoSolicitudCatalogoDto 
+            { 
+                IdTipoSolicitud = t.IdTipoSolicitud, 
+                Codigo = t.Codigo, 
+                Descripcion = t.Descripcion,
+                Activo = t.Activo
+            });
         }
 
         public async Task<TipoSolicitudCatalogoDto?> GetByIdAsync(int id)
         {
             var e = await _repo.GetByIdAsync(id);
             if (e == null) return null;
-            return new TipoSolicitudCatalogoDto { IdTipoSolicitud = e.IdTipoSolicitud, Codigo = e.Codigo, Descripcion = e.Descripcion };
+            return new TipoSolicitudCatalogoDto 
+            { 
+                IdTipoSolicitud = e.IdTipoSolicitud, 
+                Codigo = e.Codigo, 
+                Descripcion = e.Descripcion,
+                Activo = e.Activo
+            };
         }
 
         public async Task<TipoSolicitudCatalogoDto?> UpdateAsync(int id, TipoSolicitudCatalogoDto dto)
@@ -47,8 +91,15 @@ namespace Singula.Core.Services
             if (e == null) return null;
             e.Codigo = dto.Codigo;
             e.Descripcion = dto.Descripcion;
+            e.Activo = dto.Activo;
             await _repo.UpdateAsync(e);
-            return dto;
+            return new TipoSolicitudCatalogoDto
+            {
+                IdTipoSolicitud = e.IdTipoSolicitud,
+                Codigo = e.Codigo,
+                Descripcion = e.Descripcion,
+                Activo = e.Activo
+            };
         }
     }
 }

@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize]
+    // [Authorize] // Deshabilitado temporalmente - configuración no requiere autenticación
     public class ConfigSlaController : ControllerBase
     {
         private readonly IConfigSlaService _service;
