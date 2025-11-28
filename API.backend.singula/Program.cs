@@ -40,6 +40,7 @@ builder.Services.AddScoped<Singula.Core.Services.IEstadoUsuarioCatalogoService, 
 builder.Services.AddScoped<Singula.Core.Services.IPermisoService, Singula.Core.Services.PermisoService>();
 builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core.Services.SolicitudService>();
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
+builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
 
 // Add CORS policy to allow any origin
 builder.Services.AddCors(options =>
@@ -79,16 +80,56 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// CORS Configuration
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:9000",
+            "http://localhost:3000",
+            "http://frontend:9000",
+            "http://frontend:3000"
+        )
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
-// Seed DB
+// Seed DB with retry logic
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    SeedData.EnsureSeedData(db);
-} // Added missing closing brace
+    int retries = 0;
+    int maxRetries = 10;
+    
+    while (retries < maxRetries)
+    {
+        try
+        {
+            SeedData.EnsureSeedData(db);
+            break;
+        }
+        catch (Exception ex)
+        {
+            retries++;
+            if (retries >= maxRetries)
+            {
+                Console.WriteLine($"Failed to seed database after {maxRetries} attempts: {ex.Message}");
+                throw;
+            }
+            System.Threading.Thread.Sleep(2000); // Wait 2 seconds before retry
+            Console.WriteLine($"Database not ready, retrying... ({retries}/{maxRetries})");
+        }
+    }
+}
 
 // Configure the HTTP request pipeline.
+app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
 
 // Enable CORS

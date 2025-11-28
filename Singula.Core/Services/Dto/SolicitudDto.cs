@@ -15,6 +15,7 @@ namespace Singula.Core.Services.Dto
         public int? NumDiasSla { get; set; }
         public string? ResumenSla { get; set; }
         public string? OrigenDato { get; set; }
+        public string? Prioridad { get; set; }
         public int CreadoPor { get; set; }
         public DateTime? CreadoEn { get; set; }
         public DateTime? ActualizadoEn { get; set; }
