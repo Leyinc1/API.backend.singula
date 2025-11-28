@@ -9,6 +9,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// -----------------------------------------------------------------------------
+// 1. CONFIGURACIÓN DE CORS (AGREGADO)
+// Permite que el Frontend (Vue/Quasar) se conecte sin errores de bloqueo.
+// -----------------------------------------------------------------------------
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWebApp",
+        policy => policy
+            .AllowAnyOrigin()  // Permite conexiones desde cualquier puerto (9000, 8080, etc.)
+            .AllowAnyMethod()  // Permite GET, POST, PUT, DELETE
+            .AllowAnyHeader()); // Permite enviar Tokens en la cabecera
+});
+
 // Configuration
 builder.Services.AddOptions();
 
@@ -79,6 +92,12 @@ using (var scope = app.Services.CreateScope())
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
+
+// -----------------------------------------------------------------------------
+// 2. ACTIVACIÓN DE CORS (AGREGADO)
+// IMPORTANTE: Debe ir ANTES de UseAuthentication y UseAuthorization
+// -----------------------------------------------------------------------------
+app.UseCors("AllowWebApp");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -11,5 +11,6 @@ namespace Singula.Core.Services
         Task<AlertumDto> CreateAsync(AlertumDto dto);
         Task<AlertumDto?> UpdateAsync(int id, AlertumDto dto);
         Task<bool> DeleteAsync(int id);
+        Task SincronizarAlertasAutomaticas();
     }
 }
