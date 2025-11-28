@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize] // Restaurado para producción
     public class UsuariosCrudController : ControllerBase
     {
         private readonly IUsuarioService _service;
