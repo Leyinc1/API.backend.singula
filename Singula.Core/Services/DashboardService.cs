@@ -20,14 +20,14 @@ namespace Singula.Core.Services
         public async Task<IEnumerable<DashboardSlaDto>> GetDashboardDataAsync(
             DateTime? startDate = null,
             DateTime? endDate = null,
-            string? bloqueTech = null,
+            string? area = null,
             string? tipoSolicitud = null,
             string? prioridad = null,
             bool? cumpleSla = null)
         {
             var query = _context.Solicituds
                 .Include(s => s.IdPersonalNavigation)
-                .Include(s => s.IdRolRegistroNavigation)
+                .Include(s => s.IdAreaNavigation)
                 .Include(s => s.IdSlaNavigation)
                     .ThenInclude(sla => sla!.IdTipoSolicitudNavigation)
                 .AsQueryable();
@@ -39,8 +39,8 @@ namespace Singula.Core.Services
             if (endDate.HasValue)
                 query = query.Where(s => s.FechaSolicitud <= endDate.Value);
 
-            if (!string.IsNullOrEmpty(bloqueTech))
-                query = query.Where(s => s.IdRolRegistroNavigation.BloqueTech == bloqueTech);
+            if (!string.IsNullOrEmpty(area))
+                query = query.Where(s => s.IdAreaNavigation.NombreArea == area);
 
             if (!string.IsNullOrEmpty(tipoSolicitud))
             {
@@ -74,7 +74,7 @@ namespace Singula.Core.Services
                 return new DashboardSlaDto
                 {
                     Id = s.IdSolicitud,
-                    BloqueTech = s.IdRolRegistroNavigation?.BloqueTech ?? "Sin Especificar",
+                    Area = s.IdAreaNavigation?.NombreArea ?? "Sin Especificar",
                     TipoSolicitud = tipoSol,
                     Prioridad = s.Prioridad ?? "Media",
                     FechaSolicitud = s.FechaSolicitud,
@@ -181,12 +181,12 @@ namespace Singula.Core.Services
 
         public async Task<DashboardFiltersDto> GetAvailableFiltersAsync()
         {
-            // Obtener bloques tech únicos
-            var bloquesTech = await _context.RolRegistros
-                .Where(r => !string.IsNullOrEmpty(r.BloqueTech))
-                .Select(r => r.BloqueTech!)
+            // Obtener áreas únicas
+            var areas = await _context.Areas
+                .Where(a => !string.IsNullOrEmpty(a.NombreArea))
+                .Select(a => a.NombreArea!)
                 .Distinct()
-                .OrderBy(b => b)
+                .OrderBy(a => a)
                 .ToListAsync();
 
             // Obtener tipos de solicitud únicos
@@ -196,10 +196,10 @@ namespace Singula.Core.Services
                 .OrderBy(t => t)
                 .ToListAsync();
 
-            // Obtener prioridades únicas
-            var prioridades = await _context.Solicituds
-                .Where(s => !string.IsNullOrEmpty(s.Prioridad))
-                .Select(s => s.Prioridad!)
+            // Obtener prioridades únicas desde el catálogo (usando código)
+            var prioridades = await _context.PrioridadCatalogos
+                .Where(p => !string.IsNullOrEmpty(p.Codigo))
+                .Select(p => p.Codigo!)
                 .Distinct()
                 .OrderBy(p => p)
                 .ToListAsync();
@@ -218,7 +218,7 @@ namespace Singula.Core.Services
 
             return new DashboardFiltersDto
             {
-                BloquesTech = bloquesTech,
+                Areas = areas,
                 TiposSolicitud = tiposSolicitud,
                 Prioridades = prioridades,
                 ConfiguracionesSla = configuracionesSla

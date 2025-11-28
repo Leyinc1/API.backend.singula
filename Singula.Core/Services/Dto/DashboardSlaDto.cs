@@ -6,7 +6,7 @@ namespace Singula.Core.Services.Dto
     public class DashboardSlaDto
     {
         public int Id { get; set; }
-        public string BloqueTech { get; set; } = string.Empty;
+        public string Area { get; set; } = string.Empty;
         public string TipoSolicitud { get; set; } = string.Empty;
         public string Prioridad { get; set; } = "Media";
         public DateTime? FechaSolicitud { get; set; }
@@ -43,7 +43,7 @@ namespace Singula.Core.Services.Dto
 
     public class DashboardFiltersDto
     {
-        public List<string> BloquesTech { get; set; } = new();
+        public List<string> Areas { get; set; } = new();
         public List<string> TiposSolicitud { get; set; } = new();
         public List<string> Prioridades { get; set; } = new();
         public List<ConfigSlaInfo> ConfiguracionesSla { get; set; } = new();

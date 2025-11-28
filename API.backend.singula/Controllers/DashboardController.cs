@@ -23,7 +23,7 @@ namespace API.backend.singula.Controllers
         public async Task<IActionResult> GetSlaData(
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate,
-            [FromQuery] string? bloqueTech,
+            [FromQuery] string? area,
             [FromQuery] string? tipoSolicitud,
             [FromQuery] string? prioridad,
             [FromQuery] bool? cumpleSla)
@@ -31,7 +31,7 @@ namespace API.backend.singula.Controllers
             try
             {
                 var data = await _service.GetDashboardDataAsync(
-                    startDate, endDate, bloqueTech, tipoSolicitud, prioridad, cumpleSla);
+                    startDate, endDate, area, tipoSolicitud, prioridad, cumpleSla);
                 
                 return Ok(new { data });
             }
