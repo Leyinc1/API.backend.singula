@@ -22,6 +22,8 @@ public partial class ApplicationDbContext : DbContext
 
     public virtual DbSet<ConfigSla> ConfigSlas { get; set; }
 
+    public virtual DbSet<ConfiguracionNotificacionEmail> ConfiguracionNotificacionEmails { get; set; }
+
     public virtual DbSet<EstadoAlertaCatalogo> EstadoAlertaCatalogos { get; set; }
 
     public virtual DbSet<EstadoSolicitudCatalogo> EstadoSolicitudCatalogos { get; set; }
