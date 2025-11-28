@@ -116,7 +116,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Kestrel: PUERTOS FIJOS
 // ===============================================
 // COMENTADO: Causa problemas con certificados HTTPS en Docker
-builder.WebHost.UseUrls("http://localhost:5000", "https://localhost:7002");
+// builder.WebHost.UseUrls("http://localhost:5000", "https://localhost:7002");
 // En Docker, usar solo HTTP mediante ASPNETCORE_URLS en docker-compose.yml
 
 var app = builder.Build();
