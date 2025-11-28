@@ -14,7 +14,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Restaurado para producción
+    // [Authorize] // TODO: Restaurar para producción
     public class AlertumController : ControllerBase
     {
         private readonly IAlertumService _service;
@@ -70,7 +70,7 @@ namespace API.backend.singula.Controllers
 
         // --- MÉTODO DASHBOARD UNIFICADO Y CORREGIDO ---
         [HttpGet("dashboard-resumen")]
-        [Authorize]
+        [AllowAnonymous] // TODO: Cambiar a [Authorize] en producción
         public async Task<ActionResult<IEnumerable<AlertaDashboardDto>>> GetDashboardAlerts()
         {
             // PASO 1: Ejecutar la lógica de negocio (Calcular días y generar alertas nuevas)
