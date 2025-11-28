@@ -16,7 +16,7 @@ builder.Services.AddControllers();
 // ===============================================
 // SWAGGER + Soporte para IFormFile + CORS
 // ===============================================
-builder.Services.AddEndpointsApiExplorer(); // De Master
+builder.Services.AddEndpointsApiExplorer();
 
 // 1. CONFIGURACIÓN DE CORS
 builder.Services.AddCors(options =>
@@ -28,7 +28,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()); // Permite enviar Tokens en la cabecera
 });
 
-builder.Services.AddOptions(); // De Feature
+builder.Services.AddOptions();
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -88,7 +88,6 @@ builder.Services.AddScoped<Singula.Core.Services.IPermisoService, Singula.Core.S
 builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core.Services.SolicitudService>();
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
-builder.Services.AddScoped<Singula.Core.Services.IExcelImportService, Singula.Core.Services.ExcelImportService>();
 
 // JWT AUTHENTICATION
 // ===============================================
@@ -153,9 +152,10 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// app.UseHttpsRedirection(); // Opcional, según tu entorno
-
 app.UseStaticFiles();
+
+// Comment out HTTPS redirection in dev to avoid HTTP->HTTPS redirect breaking CORS preflight
+// app.UseHttpsRedirection();
 
 // 2. ACTIVACIÓN DE CORS
 // IMPORTANTE: Debe ir ANTES de UseAuthentication y UseAuthorization

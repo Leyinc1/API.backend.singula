@@ -11,7 +11,8 @@ namespace Singula.Core.Services.Dto
         public string? FiltrosJson { get; set; }
         public int GeneradoPor { get; set; }
         public DateTime? FechaGeneracion { get; set; }
-        public string? RutaArchivo { get; set; }
+        public string? RutaArchivo { get; set; } // Nullable - ahora guarda nombre del archivo descargado
+        public string? NombreArchivo { get; set; } // Nuevo: nombre del PDF descargado por el usuario
         public ICollection<int>? IdSolicituds { get; set; }
     }
 }

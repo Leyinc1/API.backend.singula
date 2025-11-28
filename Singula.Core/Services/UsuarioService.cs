@@ -66,11 +66,11 @@ namespace Singula.Core.Services
 
             // Validate role exists
             var role = await _rolesRepo.GetByIdAsync(dto.IdRolSistema);
-            if (role == null) throw new ArgumentException("IdRolSistema inválido");
+            if (role == null) throw new ArgumentException("IdRolSistema invï¿½lido");
 
             // Validate estado exists
             var estado = await _estadosRepo.GetByIdAsync(dto.IdEstadoUsuario);
-            if (estado == null) throw new ArgumentException("IdEstadoUsuario inválido");
+            if (estado == null) throw new ArgumentException("IdEstadoUsuario invï¿½lido");
 
             var user = new Usuario
             {
@@ -135,6 +135,7 @@ namespace Singula.Core.Services
             var tokenKey = Encoding.UTF8.GetBytes(key);
             var claims = new[] {
                 new Claim(ClaimTypes.NameIdentifier, user.IdUsuario.ToString()),
+                new Claim("UserId", user.IdUsuario.ToString()), // Claim personalizado para facilitar acceso desde frontend
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.Correo)
             };
