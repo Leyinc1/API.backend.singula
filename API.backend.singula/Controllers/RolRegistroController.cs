@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize] // Restaurado para producción
+    // [Authorize] // TODO: Restaurar para producciÃ³n
     public class RolRegistroController : ControllerBase
     {
         private readonly IRolRegistroService _service;

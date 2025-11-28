@@ -88,6 +88,7 @@ builder.Services.AddScoped<Singula.Core.Services.IPermisoService, Singula.Core.S
 builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core.Services.SolicitudService>();
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
+builder.Services.AddScoped<Singula.Core.Services.IExcelImportService, Singula.Core.Services.ExcelImportService>();
 
 // JWT AUTHENTICATION
 // ===============================================
@@ -113,7 +114,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ===============================================
 // Kestrel: PUERTOS FIJOS
 // ===============================================
-builder.WebHost.UseUrls("http://localhost:5192", "https://localhost:7002");
+builder.WebHost.UseUrls("http://localhost:5000", "https://localhost:7002");
 
 var app = builder.Build();
 

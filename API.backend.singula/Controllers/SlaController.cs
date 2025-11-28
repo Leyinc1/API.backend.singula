@@ -17,21 +17,28 @@ namespace API.backend.singula.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<SlaController> _logger;
         private readonly IDashboardService _dashboardService;
+        private readonly IExcelImportService _excelImportService;
 
         // Extensiones permitidas
         private static readonly string[] AllowedExtensions = new[] { ".xlsx", ".xls" };
         private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
 
-        public SlaController(IWebHostEnvironment env, ILogger<SlaController> logger, IDashboardService dashboardService)
+        public SlaController(
+            IWebHostEnvironment env, 
+            ILogger<SlaController> logger, 
+            IDashboardService dashboardService,
+            IExcelImportService excelImportService)
         {
             _env = env;
             _logger = logger;
             _dashboardService = dashboardService;
+            _excelImportService = excelImportService;
         }
 
         /// <summary>
         /// Upload an Excel file related to SLA (multipart/form-data)
         /// Saves file under wwwroot/uploads/sla or ./Uploads/sla if wwwroot not present.
+        /// Then imports the data into the database.
         /// </summary>
         [HttpPost("upload")]
         [RequestSizeLimit(50_000_000)] // allow up to ~50MB
@@ -68,10 +75,25 @@ namespace API.backend.singula.Controllers
                     await file.CopyToAsync(stream);
                 }
 
+                // Procesar el Excel e importar datos a la base de datos
+                _logger.LogInformation("Procesando archivo Excel: {FilePath}", filePath);
+                var importResult = await _excelImportService.ImportFromExcelAsync(filePath);
+
                 // Return relative path from content root so caller can reference
                 var relativePath = Path.GetRelativePath(_env.ContentRootPath, filePath);
 
-                return Ok(new { fileName = unique, path = relativePath });
+                return Ok(new { 
+                    fileName = unique, 
+                    path = relativePath,
+                    import = new {
+                        success = importResult.Success,
+                        message = importResult.Message,
+                        totalRows = importResult.TotalRows,
+                        importedRows = importResult.ImportedRows,
+                        failedRows = importResult.FailedRows,
+                        errors = importResult.Errors.Take(10) // Limitar errores en respuesta
+                    }
+                });
             }
             catch (Exception ex)
             {

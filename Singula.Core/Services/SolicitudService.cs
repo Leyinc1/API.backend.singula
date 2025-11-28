@@ -1,6 +1,7 @@
 using Singula.Core.Repositories;
 using Singula.Core.Services.Dto;
 using Singula.Core.Core.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,18 +19,28 @@ namespace Singula.Core.Services
 
         public async Task<SolicitudDto> CreateAsync(SolicitudDto dto)
         {
+            // Convertir fechas a UTC para PostgreSQL
+            var fechaSolicitud = dto.FechaSolicitud.HasValue 
+                ? DateTime.SpecifyKind(dto.FechaSolicitud.Value, DateTimeKind.Utc) 
+                : (DateTime?)null;
+            var fechaIngreso = dto.FechaIngreso.HasValue 
+                ? DateTime.SpecifyKind(dto.FechaIngreso.Value, DateTimeKind.Utc) 
+                : (DateTime?)null;
+
             var entity = new Solicitud {
                 IdPersonal = dto.IdPersonal,
                 IdRolRegistro = dto.IdRolRegistro,
                 IdSla = dto.IdSla,
                 IdArea = dto.IdArea,
                 IdEstadoSolicitud = dto.IdEstadoSolicitud,
-                FechaSolicitud = dto.FechaSolicitud,
-                FechaIngreso = dto.FechaIngreso,
+                FechaSolicitud = fechaSolicitud,
+                FechaIngreso = fechaIngreso,
                 NumDiasSla = dto.NumDiasSla,
                 ResumenSla = dto.ResumenSla,
                 OrigenDato = dto.OrigenDato,
-                CreadoPor = dto.CreadoPor
+                Prioridad = dto.Prioridad,
+                CreadoPor = dto.CreadoPor > 0 ? dto.CreadoPor : null,
+                CreadoEn = DateTime.UtcNow
             };
             var created = await _repo.CreateAsync(entity);
             return new SolicitudDto {
@@ -105,17 +116,27 @@ namespace Singula.Core.Services
         {
             var e = await _repo.GetByIdAsync(id);
             if (e == null) return null;
+
+            // Convertir fechas a UTC para PostgreSQL
+            var fechaSolicitud = dto.FechaSolicitud.HasValue 
+                ? DateTime.SpecifyKind(dto.FechaSolicitud.Value, DateTimeKind.Utc) 
+                : (DateTime?)null;
+            var fechaIngreso = dto.FechaIngreso.HasValue 
+                ? DateTime.SpecifyKind(dto.FechaIngreso.Value, DateTimeKind.Utc) 
+                : (DateTime?)null;
+
             e.IdPersonal = dto.IdPersonal;
             e.IdRolRegistro = dto.IdRolRegistro;
             e.IdSla = dto.IdSla;
             e.IdArea = dto.IdArea;
             e.IdEstadoSolicitud = dto.IdEstadoSolicitud;
-            e.FechaSolicitud = dto.FechaSolicitud;
-            e.FechaIngreso = dto.FechaIngreso;
+            e.FechaSolicitud = fechaSolicitud;
+            e.FechaIngreso = fechaIngreso;
             e.NumDiasSla = dto.NumDiasSla;
             e.ResumenSla = dto.ResumenSla;
             e.OrigenDato = dto.OrigenDato;
             e.ActualizadoPor = dto.ActualizadoPor;
+            e.ActualizadoEn = DateTime.UtcNow;
             await _repo.UpdateAsync(e);
             return dto;
         }
