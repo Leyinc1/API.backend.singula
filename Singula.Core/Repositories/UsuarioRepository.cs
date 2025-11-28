@@ -54,5 +54,10 @@ namespace Singula.Core.Repositories
         {
             return await _db.Usuarios.FirstOrDefaultAsync(u => u.Username == username);
         }
+
+        public async Task<Usuario?> GetByCorreoAsync(string correo)
+        {
+            return await _db.Usuarios.FirstOrDefaultAsync(u => u.Correo == correo);
+        }
     }
 }
