@@ -64,9 +64,12 @@ namespace Singula.Core.Services
                 var diasUmbral = s.IdSlaNavigation?.DiasUmbral ?? 0;
                 var tipoSol = s.IdSlaNavigation?.IdTipoSolicitudNavigation?.Descripcion ?? "";
 
-                // Determinar cumplimiento según el tipo
-                var cumpleSla1 = tipoSol == "Nuevo Personal" && diasTranscurridos <= diasUmbral;
-                var cumpleSla2 = tipoSol == "Reemplazo" && diasTranscurridos <= diasUmbral;
+                // Determinar cumplimiento genérico
+                var cumpleSla = diasTranscurridos <= diasUmbral;
+                
+                // Mantener lógica legacy para compatibilidad
+                var cumpleSla1 = tipoSol == "Nuevo Personal" && cumpleSla;
+                var cumpleSla2 = tipoSol == "Reemplazo" && cumpleSla;
 
                 return new DashboardSlaDto
                 {
@@ -77,6 +80,7 @@ namespace Singula.Core.Services
                     FechaSolicitud = s.FechaSolicitud,
                     FechaIngreso = s.FechaIngreso,
                     DiasTranscurridos = diasTranscurridos,
+                    CumpleSla = cumpleSla,
                     CumpleSla1 = cumpleSla1,
                     CumpleSla2 = cumpleSla2,
                     NombrePersonal = $"{s.IdPersonalNavigation?.Nombres ?? ""} {s.IdPersonalNavigation?.Apellidos ?? ""}".Trim(),
@@ -87,10 +91,7 @@ namespace Singula.Core.Services
             // Filtro adicional por cumplimiento
             if (cumpleSla.HasValue)
             {
-                result = result.Where(r =>
-                    (r.TipoSolicitud == "Nuevo Personal" && r.CumpleSla1 == cumpleSla.Value) ||
-                    (r.TipoSolicitud == "Reemplazo" && r.CumpleSla2 == cumpleSla.Value)
-                ).ToList();
+                result = result.Where(r => r.CumpleSla == cumpleSla.Value).ToList();
             }
 
             return result;
@@ -105,61 +106,122 @@ namespace Singula.Core.Services
 
             var totalSolicitudes = solicitudes.Count;
 
-            // SLA1 - Nuevo Personal
-            var sla1Solicitudes = solicitudes
-                .Where(s => s.IdSlaNavigation?.IdTipoSolicitudNavigation?.Descripcion == "Nuevo Personal")
+            // Obtener todos los tipos de solicitud únicos
+            var tiposSolicitud = solicitudes
+                .Where(s => s.IdSlaNavigation?.IdTipoSolicitudNavigation?.Descripcion != null)
+                .Select(s => s.IdSlaNavigation!.IdTipoSolicitudNavigation!.Descripcion!)
+                .Distinct()
                 .ToList();
 
-            var cumpleSla1Count = sla1Solicitudes.Count(s =>
-            {
-                var dias = s.FechaIngreso.HasValue && s.FechaSolicitud.HasValue
-                    ? (s.FechaIngreso.Value - s.FechaSolicitud.Value).Days
-                    : s.NumDiasSla ?? 0;
-                return dias <= (s.IdSlaNavigation?.DiasUmbral ?? 0);
-            });
+            // Calcular estadísticas dinámicamente para cada tipo
+            var estadisticasPorTipo = new Dictionary<string, SlaStats>();
 
-            var promedioDiasSla1 = sla1Solicitudes.Any()
-                ? sla1Solicitudes.Average(s =>
+            foreach (var tipo in tiposSolicitud)
+            {
+                var solicitudesTipo = solicitudes
+                    .Where(s => s.IdSlaNavigation?.IdTipoSolicitudNavigation?.Descripcion == tipo)
+                    .ToList();
+
+                if (!solicitudesTipo.Any()) continue;
+
+                var cumpleSlaCount = solicitudesTipo.Count(s =>
+                {
+                    var dias = s.FechaIngreso.HasValue && s.FechaSolicitud.HasValue
+                        ? (s.FechaIngreso.Value - s.FechaSolicitud.Value).Days
+                        : s.NumDiasSla ?? 0;
+                    return dias <= (s.IdSlaNavigation?.DiasUmbral ?? 0);
+                });
+
+                var promedioDias = solicitudesTipo.Average(s =>
                     s.FechaIngreso.HasValue && s.FechaSolicitud.HasValue
                         ? (s.FechaIngreso.Value - s.FechaSolicitud.Value).Days
-                        : s.NumDiasSla ?? 0)
+                        : s.NumDiasSla ?? 0);
+
+                var porcentajeCumplimiento = (double)cumpleSlaCount / solicitudesTipo.Count * 100;
+
+                // Obtener días umbral promedio para este tipo
+                var diasUmbral = solicitudesTipo
+                    .Select(s => s.IdSlaNavigation?.DiasUmbral ?? 0)
+                    .FirstOrDefault();
+
+                estadisticasPorTipo[tipo] = new SlaStats
+                {
+                    TotalSolicitudes = solicitudesTipo.Count,
+                    CumpleSla = cumpleSlaCount,
+                    PorcentajeCumplimiento = porcentajeCumplimiento,
+                    PromedioDias = promedioDias,
+                    DiasUmbral = diasUmbral
+                };
+            }
+
+            // Mantener campos legacy para compatibilidad
+            var cumplimientoSla1 = estadisticasPorTipo.ContainsKey("Nuevo Personal") 
+                ? estadisticasPorTipo["Nuevo Personal"].PorcentajeCumplimiento 
                 : 0;
-
-            var cumplimientoSla1 = sla1Solicitudes.Any()
-                ? (double)cumpleSla1Count / sla1Solicitudes.Count * 100
+            var cumplimientoSla2 = estadisticasPorTipo.ContainsKey("Reemplazo") 
+                ? estadisticasPorTipo["Reemplazo"].PorcentajeCumplimiento 
                 : 0;
-
-            // SLA2 - Reemplazo
-            var sla2Solicitudes = solicitudes
-                .Where(s => s.IdSlaNavigation?.IdTipoSolicitudNavigation?.Descripcion == "Reemplazo")
-                .ToList();
-
-            var cumpleSla2Count = sla2Solicitudes.Count(s =>
-            {
-                var dias = s.FechaIngreso.HasValue && s.FechaSolicitud.HasValue
-                    ? (s.FechaIngreso.Value - s.FechaSolicitud.Value).Days
-                    : s.NumDiasSla ?? 0;
-                return dias <= (s.IdSlaNavigation?.DiasUmbral ?? 0);
-            });
-
-            var promedioDiasSla2 = sla2Solicitudes.Any()
-                ? sla2Solicitudes.Average(s =>
-                    s.FechaIngreso.HasValue && s.FechaSolicitud.HasValue
-                        ? (s.FechaIngreso.Value - s.FechaSolicitud.Value).Days
-                        : s.NumDiasSla ?? 0)
+            var promedioDiasSla1 = estadisticasPorTipo.ContainsKey("Nuevo Personal") 
+                ? estadisticasPorTipo["Nuevo Personal"].PromedioDias 
                 : 0;
-
-            var cumplimientoSla2 = sla2Solicitudes.Any()
-                ? (double)cumpleSla2Count / sla2Solicitudes.Count * 100
+            var promedioDiasSla2 = estadisticasPorTipo.ContainsKey("Reemplazo") 
+                ? estadisticasPorTipo["Reemplazo"].PromedioDias 
                 : 0;
 
             return new DashboardStatsDto
             {
                 TotalSolicitudes = totalSolicitudes,
+                EstadisticasPorTipo = estadisticasPorTipo,
                 CumplimientoSla1 = cumplimientoSla1,
                 CumplimientoSla2 = cumplimientoSla2,
                 PromedioDiasSla1 = promedioDiasSla1,
                 PromedioDiasSla2 = promedioDiasSla2
+            };
+        }
+
+        public async Task<DashboardFiltersDto> GetAvailableFiltersAsync()
+        {
+            // Obtener bloques tech únicos
+            var bloquesTech = await _context.RolRegistros
+                .Where(r => !string.IsNullOrEmpty(r.BloqueTech))
+                .Select(r => r.BloqueTech!)
+                .Distinct()
+                .OrderBy(b => b)
+                .ToListAsync();
+
+            // Obtener tipos de solicitud únicos
+            var tiposSolicitud = await _context.TipoSolicitudCatalogos
+                .Select(t => t.Descripcion!)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToListAsync();
+
+            // Obtener prioridades únicas
+            var prioridades = await _context.Solicituds
+                .Where(s => !string.IsNullOrEmpty(s.Prioridad))
+                .Select(s => s.Prioridad!)
+                .Distinct()
+                .OrderBy(p => p)
+                .ToListAsync();
+
+            // Obtener configuraciones SLA
+            var configuracionesSla = await _context.ConfigSlas
+                .Include(c => c.IdTipoSolicitudNavigation)
+                .Select(c => new ConfigSlaInfo
+                {
+                    Id = c.IdSla,
+                    CodigoSla = c.CodigoSla ?? "",
+                    TipoSolicitud = c.IdTipoSolicitudNavigation != null ? c.IdTipoSolicitudNavigation.Descripcion ?? "" : "",
+                    DiasUmbral = c.DiasUmbral ?? 0
+                })
+                .ToListAsync();
+
+            return new DashboardFiltersDto
+            {
+                BloquesTech = bloquesTech,
+                TiposSolicitud = tiposSolicitud,
+                Prioridades = prioridades,
+                ConfiguracionesSla = configuracionesSla
             };
         }
     }

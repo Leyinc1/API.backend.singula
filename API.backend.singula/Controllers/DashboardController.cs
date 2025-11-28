@@ -49,12 +49,26 @@ namespace API.backend.singula.Controllers
         {
             try
             {
-                var stats = await _service.GetStatisticsAsync();
-                return Ok(new { data = stats });
+                var statistics = await _service.GetStatisticsAsync();
+                return Ok(new { data = statistics });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { error = "Error al obtener estadísticas", details = ex.Message });
+                return StatusCode(500, new { error = "Error al obtener estadísticas", message = ex.Message });
+            }
+        }
+
+        [HttpGet("filters")]
+        public async Task<IActionResult> GetAvailableFilters()
+        {
+            try
+            {
+                var filters = await _service.GetAvailableFiltersAsync();
+                return Ok(new { data = filters });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al obtener filtros disponibles", message = ex.Message });
             }
         }
     }

@@ -242,6 +242,54 @@ namespace Singula.Core.Infrastructure.Data
                     context.SaveChanges();
                 }
             }
+
+            // Seed PrioridadCatalogo if empty
+            if (!context.PrioridadCatalogos.Any())
+            {
+                context.PrioridadCatalogos.AddRange(
+                    new PrioridadCatalogo
+                    {
+                        Codigo = "CRITICA",
+                        Descripcion = "Prioridad Crítica - Requiere atención inmediata",
+                        Nivel = 4,
+                        SlaMultiplier = 0.5m, // Reduce el SLA a la mitad
+                        Icon = "emergency",
+                        Color = "#d32f2f",
+                        Activo = true
+                    },
+                    new PrioridadCatalogo
+                    {
+                        Codigo = "ALTA",
+                        Descripcion = "Prioridad Alta - Requiere atención prioritaria",
+                        Nivel = 3,
+                        SlaMultiplier = 0.75m, // Reduce el SLA un 25%
+                        Icon = "priority_high",
+                        Color = "#f57c00",
+                        Activo = true
+                    },
+                    new PrioridadCatalogo
+                    {
+                        Codigo = "MEDIA",
+                        Descripcion = "Prioridad Media - Atención en tiempo normal",
+                        Nivel = 2,
+                        SlaMultiplier = 1.0m, // SLA normal
+                        Icon = "remove",
+                        Color = "#1976d2",
+                        Activo = true
+                    },
+                    new PrioridadCatalogo
+                    {
+                        Codigo = "BAJA",
+                        Descripcion = "Prioridad Baja - Puede esperar",
+                        Nivel = 1,
+                        SlaMultiplier = 1.5m, // Aumenta el SLA un 50%
+                        Icon = "arrow_downward",
+                        Color = "#388e3c",
+                        Activo = true
+                    }
+                );
+                context.SaveChanges();
+            }
         }
     }
 }

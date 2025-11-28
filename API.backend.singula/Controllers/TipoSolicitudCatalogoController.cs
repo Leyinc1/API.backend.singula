@@ -8,7 +8,7 @@ namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    // [Authorize] // Deshabilitado temporalmente - configuración no requiere autenticación
     public class TipoSolicitudCatalogoController : ControllerBase
     {
         private readonly ITipoSolicitudCatalogoService _service;
@@ -51,9 +51,30 @@ namespace API.backend.singula.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var ok = await _service.DeleteAsync(id);
-            if (!ok) return NotFound();
-            return NoContent();
+            try
+            {
+                var ok = await _service.DeleteAsync(id);
+                if (!ok) return NotFound();
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Error de foreign key constraint
+                return BadRequest(new 
+                { 
+                    error = "FOREIGN_KEY_CONSTRAINT",
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                // Otros errores
+                return StatusCode(500, new 
+                { 
+                    error = "INTERNAL_ERROR",
+                    message = "Error al eliminar el tipo de solicitud: " + ex.Message
+                });
+            }
         }
     }
 }

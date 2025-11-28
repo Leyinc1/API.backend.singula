@@ -1,36 +1,83 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Singula.Core.Infrastructure.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ===============================================
+// CONTROLLERS
+// ===============================================
 builder.Services.AddControllers();
 
-// Configuration
+// ===============================================
+// SWAGGER + Soporte para IFormFile + CORS
+// ===============================================
+builder.Services.AddEndpointsApiExplorer();
+
+// 1. CONFIGURACIÓN DE CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWebApp",
+        policy => policy
+            .AllowAnyOrigin()   // Permite conexiones desde cualquier puerto
+            .AllowAnyMethod()   // Permite GET, POST, PUT, DELETE
+            .AllowAnyHeader()); // Permite enviar Tokens en la cabecera
+});
+
 builder.Services.AddOptions();
 
-// DbContext
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Singula API",
+        Version = "v1"
+    });
+
+    // Soporte para archivos en Swagger
+    options.MapType<IFormFile>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "binary"
+    });
+
+    options.SupportNonNullableReferenceTypes();
+});
+
+// ===============================================
+// LIMITE DE SUBIDA (50 MB)
+// ===============================================
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50_000_000; // 50MB
+});
+
+// ===============================================
+// DATABASE
+// ===============================================
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(conn)
 );
 
-// Generic repository registration
+// ===============================================
+// REPOS + SERVICES
+// ===============================================
 builder.Services.AddScoped(typeof(Singula.Core.Repositories.IRepository<>), typeof(Singula.Core.Repositories.EfRepository<>));
-
-// Repositories / Services DI (specific)
 builder.Services.AddScoped<Singula.Core.Repositories.IUsuarioRepository, Singula.Core.Repositories.UsuarioRepository>();
+builder.Services.AddScoped<Singula.Core.Repositories.IAlertumRepository, Singula.Core.Repositories.AlertumRepository>();
 
-// Domain services registration
 builder.Services.AddScoped<Singula.Core.Services.IUsuarioService, Singula.Core.Services.UsuarioService>();
 builder.Services.AddScoped<Singula.Core.Services.IAreaService, Singula.Core.Services.AreaService>();
 builder.Services.AddScoped<Singula.Core.Services.IAlertumService, Singula.Core.Services.AlertumService>();
 builder.Services.AddScoped<Singula.Core.Services.IRolRegistroService, Singula.Core.Services.RolRegistroService>();
 builder.Services.AddScoped<Singula.Core.Services.IRolesSistemaService, Singula.Core.Services.RolesSistemaService>();
 builder.Services.AddScoped<Singula.Core.Services.ITipoSolicitudCatalogoService, Singula.Core.Services.TipoSolicitudCatalogoService>();
+builder.Services.AddScoped<Singula.Core.Services.IPrioridadCatalogoService, Singula.Core.Services.PrioridadCatalogoService>();
 builder.Services.AddScoped<Singula.Core.Services.IReporteService, Singula.Core.Services.ReporteService>();
 builder.Services.AddScoped<Singula.Core.Services.IConfigSlaService, Singula.Core.Services.ConfigSlaService>();
 builder.Services.AddScoped<Singula.Core.Services.ITipoAlertaCatalogoService, Singula.Core.Services.TipoAlertaCatalogoService>();
@@ -42,20 +89,14 @@ builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
 
-// JWT
+// JWT AUTHENTICATION
+// ===============================================
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var key = jwtSection["Key"];
 var issuer = jwtSection["Issuer"];
 var audience = jwtSection["Audience"];
 
-if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(issuer) || string.IsNullOrEmpty(audience))
-    throw new Exception("JWT not configured in appsettings.json");
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 .AddJwtBearer(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
@@ -69,25 +110,10 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// CORS Configuration
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            "http://localhost:9000",
-            "https://localhost:9000",
-            "http://localhost:5192",
-            "https://localhost:5192",
-            "http://localhost:3000",
-            "https://localhost:7002",
-            "http://frontend:3000"
-        )
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials();
-    });
-});
+// ===============================================
+// Kestrel: PUERTOS FIJOS
+// ===============================================
+builder.WebHost.UseUrls("http://localhost:5000", "https://localhost:7002");
 
 var app = builder.Build();
 
@@ -113,17 +139,28 @@ using (var scope = app.Services.CreateScope())
                 Console.WriteLine($"Failed to seed database after {maxRetries} attempts: {ex.Message}");
                 throw;
             }
-            System.Threading.Thread.Sleep(2000); // Wait 2 seconds before retry
+            System.Threading.Thread.Sleep(2000); 
             Console.WriteLine($"Database not ready, retrying... ({retries}/{maxRetries})");
         }
     }
 }
 
-// Configure the HTTP request pipeline.
-app.UseCors("AllowFrontend");
+// ===============================================
+// HTTP REQUEST PIPELINE
+// ===============================================
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseStaticFiles();
 
 // Comment out HTTPS redirection in dev to avoid HTTP->HTTPS redirect breaking CORS preflight
 // app.UseHttpsRedirection();
+
+// 2. ACTIVACIÓN DE CORS
+// IMPORTANTE: Debe ir ANTES de UseAuthentication y UseAuthorization
+// Usamos la política "AllowWebApp" definida arriba que permite todo
+app.UseCors("AllowWebApp");
 
 app.UseAuthentication();
 app.UseAuthorization();

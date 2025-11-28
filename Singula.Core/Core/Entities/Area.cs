@@ -22,6 +22,9 @@ public partial class Area
     [StringLength(250)]
     public string? Descripcion { get; set; }
 
+    [Column("activo")]
+    public bool Activo { get; set; } = true;
+
     [InverseProperty("IdAreaNavigation")]
     public virtual ICollection<Solicitud> Solicituds { get; set; } = new List<Solicitud>();
 }

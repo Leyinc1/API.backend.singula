@@ -17,5 +17,7 @@ namespace Singula.Core.Services
         );
         
         Task<DashboardStatsDto> GetStatisticsAsync();
+        
+        Task<DashboardFiltersDto> GetAvailableFiltersAsync();
     }
 }
