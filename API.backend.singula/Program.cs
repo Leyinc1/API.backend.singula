@@ -88,6 +88,7 @@ builder.Services.AddScoped<Singula.Core.Services.IPermisoService, Singula.Core.S
 builder.Services.AddScoped<Singula.Core.Services.ISolicitudService, Singula.Core.Services.SolicitudService>();
 builder.Services.AddScoped<Singula.Core.Services.IPersonalService, Singula.Core.Services.PersonalService>();
 builder.Services.AddScoped<Singula.Core.Services.IDashboardService, Singula.Core.Services.DashboardService>();
+builder.Services.AddScoped<Singula.Core.Services.IExcelImportService, Singula.Core.Services.ExcelImportService>();
 
 // JWT AUTHENTICATION
 // ===============================================

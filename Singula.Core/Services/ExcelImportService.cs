@@ -21,16 +21,20 @@ namespace Singula.Core.Services
         // Mapeo de columnas del Excel a propiedades (normalizado a lowercase para comparación)
         private static readonly Dictionary<string, string> ColumnMapping = new(StringComparer.OrdinalIgnoreCase)
         {
-            // BloqueTech
-            { "bloque tech", "BloqueTech" },
-            { "bloque_tech", "BloqueTech" },
-            { "bloquetech", "BloqueTech" },
+            // Area (reemplaza BloqueTech)
+            { "area", "Area" },
+            { "área", "Area" },
+            { "AREA", "Area" },
+            { "ÁREA", "Area" },
             
             // TipoSolicitud
             { "tipo de solicitud", "TipoSolicitud" },
             { "tipo_solicitud", "TipoSolicitud" },
             { "tiposolicitud", "TipoSolicitud" },
             { "tipo solicitud", "TipoSolicitud" },
+            { "tipo de sla", "TipoSolicitud" },
+            { "tipo_sla", "TipoSolicitud" },
+            { "tiposla", "TipoSolicitud" },
             
             // Prioridad
             { "prioridad", "Prioridad" },
@@ -50,9 +54,6 @@ namespace Singula.Core.Services
             { "nombre personal", "NombrePersonal" },
             { "nombre_personal", "NombrePersonal" },
             { "nombrepersonal", "NombrePersonal" },
-            
-            // Area
-            { "area", "Area" },
             
             // Eficacia
             { "eficacia", "Eficacia" },
@@ -115,7 +116,7 @@ namespace Singula.Core.Services
                 }
 
                 // Validar columnas requeridas (FechaIngreso es opcional)
-                var requiredColumns = new[] { "BloqueTech", "FechaSolicitud" };
+                var requiredColumns = new[] { "Area", "FechaSolicitud" };
                 var missingColumns = requiredColumns.Where(c => !columnIndices.ContainsKey(c)).ToList();
                 if (missingColumns.Any())
                 {
@@ -134,17 +135,19 @@ namespace Singula.Core.Services
                     {
                         var rowData = ExtractRowData(row, columnIndices);
                         
-                        if (string.IsNullOrWhiteSpace(rowData.BloqueTech))
+                        if (string.IsNullOrWhiteSpace(rowData.Area))
                         {
                             result.FailedRows++;
-                            result.Errors.Add($"Fila {row.RowNumber()}: BLOQUE TECH está vacío");
+                            result.Errors.Add($"Fila {row.RowNumber()}: AREA está vacía");
                             continue;
                         }
 
                         // Buscar o usar valores por defecto para las FK
-                        var area = FindOrCreateArea(areas, rowData.Area ?? rowData.BloqueTech);
-                        var rol = FindRolByBloqueTech(roles, rowData.BloqueTech);
+                        var area = FindOrCreateArea(areas, rowData.Area);
                         var sla = FindSlaBySolicitud(slas, rowData.TipoSolicitud);
+
+                        // Normalizar prioridad a códigos válidos
+                        var prioridadNormalizada = NormalizarPrioridad(rowData.Prioridad);
 
                         // Calcular días SLA
                         var diasSla = 0;
@@ -157,7 +160,7 @@ namespace Singula.Core.Services
                         var solicitud = new Solicitud
                         {
                             IdPersonal = 1, // Personal genérico
-                            IdRolRegistro = rol?.IdRolRegistro ?? 1,
+                            IdRolRegistro = 1, // RolRegistro por defecto
                             IdSla = sla?.IdSla ?? 1,
                             IdArea = area?.IdArea ?? 1,
                             IdEstadoSolicitud = estadoPendiente?.IdEstadoSolicitud ?? 1,
@@ -168,9 +171,9 @@ namespace Singula.Core.Services
                                 ? DateTime.SpecifyKind(rowData.FechaIngreso.Value, DateTimeKind.Utc) 
                                 : null,
                             NumDiasSla = diasSla,
-                            ResumenSla = $"{rowData.TipoSolicitud} - {rowData.BloqueTech}",
+                            ResumenSla = $"{rowData.TipoSolicitud} - {rowData.Area}",
                             OrigenDato = "excel",
-                            Prioridad = rowData.Prioridad ?? "Media",
+                            Prioridad = prioridadNormalizada,
                             CreadoPor = null,
                             CreadoEn = DateTime.UtcNow
                         };
@@ -208,8 +211,8 @@ namespace Singula.Core.Services
         {
             var data = new ExcelRowData();
 
-            if (columnIndices.TryGetValue("BloqueTech", out int bloqueTechCol))
-                data.BloqueTech = row.Cell(bloqueTechCol).GetString()?.Trim();
+            if (columnIndices.TryGetValue("Area", out int areaCol))
+                data.Area = row.Cell(areaCol).GetString()?.Trim();
 
             if (columnIndices.TryGetValue("TipoSolicitud", out int tipoCol))
                 data.TipoSolicitud = row.Cell(tipoCol).GetString()?.Trim();
@@ -225,9 +228,6 @@ namespace Singula.Core.Services
 
             if (columnIndices.TryGetValue("NombrePersonal", out int nombreCol))
                 data.NombrePersonal = row.Cell(nombreCol).GetString()?.Trim();
-
-            if (columnIndices.TryGetValue("Area", out int areaCol))
-                data.Area = row.Cell(areaCol).GetString()?.Trim();
 
             if (columnIndices.TryGetValue("Eficacia", out int eficaciaCol))
                 data.Eficacia = row.Cell(eficaciaCol).GetString()?.Trim();
@@ -289,14 +289,27 @@ namespace Singula.Core.Services
                 ?? areas.FirstOrDefault();
         }
 
-        private RolRegistro? FindRolByBloqueTech(List<RolRegistro> roles, string? bloqueTech)
+        private string NormalizarPrioridad(string? prioridad)
         {
-            if (string.IsNullOrWhiteSpace(bloqueTech)) return roles.FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(prioridad))
+                return "MEDIA";
 
-            return roles.FirstOrDefault(r => 
-                r.BloqueTech?.Equals(bloqueTech, StringComparison.OrdinalIgnoreCase) == true ||
-                r.NombreRol?.Contains(bloqueTech, StringComparison.OrdinalIgnoreCase) == true)
-                ?? roles.FirstOrDefault();
+            var prioridadLower = prioridad.ToLower();
+
+            if (prioridadLower.Contains("crítica") || prioridadLower.Contains("critica"))
+                return "CRITICA";
+            
+            if (prioridadLower.Contains("alta"))
+                return "ALTA";
+            
+            if (prioridadLower.Contains("media"))
+                return "MEDIA";
+            
+            if (prioridadLower.Contains("baja"))
+                return "BAJA";
+
+            // Si no coincide con ninguno, usar MEDIA por defecto
+            return "MEDIA";
         }
 
         private ConfigSla? FindSlaBySolicitud(List<ConfigSla> slas, string? tipoSolicitud)
@@ -322,13 +335,12 @@ namespace Singula.Core.Services
 
         private class ExcelRowData
         {
-            public string? BloqueTech { get; set; }
+            public string? Area { get; set; }
             public string? TipoSolicitud { get; set; }
             public string? Prioridad { get; set; }
             public DateTime? FechaSolicitud { get; set; }
             public DateTime? FechaIngreso { get; set; }
             public string? NombrePersonal { get; set; }
-            public string? Area { get; set; }
             public string? Eficacia { get; set; }
             public string? Observaciones { get; set; }
         }
