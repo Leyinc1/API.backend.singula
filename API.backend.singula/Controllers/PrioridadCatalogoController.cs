@@ -1,19 +1,18 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Singula.Core.Services;
 using Singula.Core.Services.Dto;
 using System.Threading.Tasks;
+using System;
 
 namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize] // Deshabilitado temporalmente - configuración no requiere autenticación
-    public class TipoSolicitudCatalogoController : ControllerBase
+    public class PrioridadCatalogoController : ControllerBase
     {
-        private readonly ITipoSolicitudCatalogoService _service;
+        private readonly IPrioridadCatalogoService _service;
 
-        public TipoSolicitudCatalogoController(ITipoSolicitudCatalogoService service)
+        public PrioridadCatalogoController(IPrioridadCatalogoService service)
         {
             _service = service;
         }
@@ -34,14 +33,14 @@ namespace API.backend.singula.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(TipoSolicitudCatalogoDto dto)
+        public async Task<IActionResult> Create(PrioridadCatalogoDto dto)
         {
             var created = await _service.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = created.IdTipoSolicitud }, created);
+            return CreatedAtAction(nameof(Get), new { id = created.IdPrioridad }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, TipoSolicitudCatalogoDto dto)
+        public async Task<IActionResult> Update(int id, PrioridadCatalogoDto dto)
         {
             var updated = await _service.UpdateAsync(id, dto);
             if (updated == null) return NotFound();
@@ -59,7 +58,6 @@ namespace API.backend.singula.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Error de foreign key constraint
                 return BadRequest(new 
                 { 
                     error = "FOREIGN_KEY_CONSTRAINT",
@@ -68,11 +66,10 @@ namespace API.backend.singula.Controllers
             }
             catch (Exception ex)
             {
-                // Otros errores
                 return StatusCode(500, new 
                 { 
                     error = "INTERNAL_ERROR",
-                    message = "Error al eliminar el tipo de solicitud: " + ex.Message
+                    message = "Error al eliminar la prioridad: " + ex.Message
                 });
             }
         }

@@ -22,6 +22,9 @@ public partial class TipoSolicitudCatalogo
     [StringLength(100)]
     public string? Descripcion { get; set; }
 
+    [Column("activo")]
+    public bool Activo { get; set; } = true;
+
     [InverseProperty("IdTipoSolicitudNavigation")]
     public virtual ICollection<ConfigSla> ConfigSlas { get; set; } = new List<ConfigSla>();
 }

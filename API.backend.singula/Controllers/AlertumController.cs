@@ -1,19 +1,20 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Singula.Core.Core.DTOs;
+using Singula.Core.Infrastructure.Data;
 using Singula.Core.Services;
 using Singula.Core.Services.Dto;
-using Singula.Core.Infrastructure.Data;
 
 namespace API.backend.singula.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize] // Restaurado para producci√≥n
     public class AlertumController : ControllerBase
     {
         private readonly IAlertumService _service;
@@ -24,7 +25,6 @@ namespace API.backend.singula.Controllers
             _service = service;
             _context = context;
         }
-
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -64,12 +64,16 @@ namespace API.backend.singula.Controllers
             return NoContent();
         }
 
-        // --- M…TODO DASHBOARD UNIFICADO Y CORREGIDO ---
+        // ============================================================
+        //  ENDPOINTS: FEATURE BACKEND NOTIFICACIONES (DASHBOARD & SLA)
+        // ============================================================
+
+        // --- M√âTODO DASHBOARD UNIFICADO Y CORREGIDO ---
         [HttpGet("dashboard-resumen")]
         [Authorize]
         public async Task<ActionResult<IEnumerable<AlertaDashboardDto>>> GetDashboardAlerts()
         {
-            // PASO 1: Ejecutar la lÛgica de negocio (Calcular dÌas y generar alertas nuevas)
+            // PASO 1: Ejecutar la l√≥gica de negocio (Calcular d√≠as y generar alertas nuevas)
             await _service.SincronizarAlertasAutomaticas();
 
             // PASO 2: Consultar la base de datos para devolver al Frontend
@@ -81,7 +85,7 @@ namespace API.backend.singula.Controllers
                 .Include(a => a.IdTipoAlertaNavigation)
                 .Include(a => a.IdEstadoAlertaNavigation)
 
-                // FILTRO: Solo traer las que NO han sido leÌdas (ID 1)
+                // FILTRO: Solo traer las que NO han sido le√≠das (ID 1)
                 .Where(a => a.IdEstadoAlerta == 1)
 
                 .OrderByDescending(a => a.FechaCreacion)
@@ -94,9 +98,9 @@ namespace API.backend.singula.Controllers
 
                     // Fechas clave
                     FechaSolicitud = a.IdSolicitudNavigation.FechaSolicitud,
-                    FechaCreacionSla = a.IdSolicitudNavigation.IdSlaNavigation.CreadoEn, // Dato para c·lculo corregido
+                    FechaCreacionSla = a.IdSolicitudNavigation.IdSlaNavigation.CreadoEn, // Dato para c√°lculo corregido
 
-                    // Datos numÈricos
+                    // Datos num√©ricos
                     DiasTotal = (int)(a.IdSolicitudNavigation.NumDiasSla ?? 0),
                     DiasLimite = a.IdSolicitudNavigation.IdSlaNavigation.DiasUmbral ?? 0,
 
@@ -104,7 +108,7 @@ namespace API.backend.singula.Controllers
                     TipoAlerta = a.IdTipoAlertaNavigation.Codigo,
                     IdTipoAlerta = a.IdTipoAlerta,
 
-                    EsNueva = true // Si pasÛ el filtro Where(IdEstadoAlerta == 1), es nueva.
+                    EsNueva = true // Si pas√≥ el filtro Where(IdEstadoAlerta == 1), es nueva.
                 })
                 .ToListAsync();
 
@@ -112,7 +116,7 @@ namespace API.backend.singula.Controllers
         }
 
         [HttpPut("marcar-leida/{id}")]
-        [Authorize] // O [Authorize] si ya tienes el login listo
+        [Authorize] 
         public async Task<IActionResult> MarcarComoLeida(int id)
         {
             var alerta = await _context.Alerta.FindAsync(id);
@@ -122,23 +126,21 @@ namespace API.backend.singula.Controllers
                 return NotFound();
             }
 
-            // CAMBIAMOS EL ESTADO A 2 (LEÕDO/ARCHIVADO)
+            // CAMBIAMOS EL ESTADO A 2 (LE√çDO/ARCHIVADO)
             alerta.IdEstadoAlerta = 2;
-            alerta.FechaLectura = DateTime.UtcNow; // Guardamos cu·ndo se leyÛ
+            alerta.FechaLectura = DateTime.UtcNow; // Guardamos cu√°ndo se ley√≥
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Alerta marcada como leÌda" });
+            return Ok(new { message = "Alerta marcada como le√≠da" });
         }
-
-        // --- AGREGAR ESTO EN AlertumController.cs ---
 
         [HttpPut("marcar-todos-incumplimientos")]
         [Authorize]
         public async Task<IActionResult> MarcarTodosIncumplimientos()
         {
             // Buscamos todas las alertas que sean:
-            // 1. Estado = 1 (No LeÌda)
+            // 1. Estado = 1 (No Le√≠da)
             // 2. Tipo = 2 (Incumplimiento/Rojo)
             var alertas = await _context.Alerta
                 .Where(a => a.IdEstadoAlerta == 1 && a.IdTipoAlerta == 2)
@@ -151,13 +153,41 @@ namespace API.backend.singula.Controllers
 
             foreach (var alerta in alertas)
             {
-                alerta.IdEstadoAlerta = 2; // LeÌdo
+                alerta.IdEstadoAlerta = 2; // Le√≠do
                 alerta.FechaLectura = DateTime.UtcNow;
             }
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Incumplimientos marcados como leÌdos" });
+            return Ok(new { message = "Incumplimientos marcados como le√≠dos" });
+        }
+
+        // ============================================================
+        //  ENDPOINTS: MASTER (FILTROS POR USUARIO GEN√âRICOS)
+        // ============================================================
+
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetByUser(int userId, [FromQuery] bool onlyUnread = false, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var list = await _service.GetByUserAsync(userId, onlyUnread, page, pageSize);
+            return Ok(list);
+        }
+
+        [HttpGet("user/{userId}/unread/count")]
+        public async Task<IActionResult> GetUnreadCount(int userId)
+        {
+            var count = await _service.GetUnreadCountByUserAsync(userId);
+            return Ok(new { Unread = count });
+        }
+
+        // Nota: Este endpoint es similar a 'marcar-leida', pero usa el servicio en lugar del contexto directo.
+        // Se mantiene para compatibilidad con otras partes del sistema.
+        [HttpPost("{id}/mark-read")]
+        public async Task<IActionResult> MarkAsRead(int id, [FromQuery] int userId)
+        {
+            var ok = await _service.MarkAsReadAsync(id, userId);
+            if (!ok) return NotFound();
+            return NoContent();
         }
     }
 }
