@@ -117,7 +117,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // ===============================================
 // Kestrel: PUERTOS FIJOS
 // ===============================================
-builder.WebHost.UseUrls("http://0.0.0.0:5192", "https://0.0.0.0:7002");
+builder.WebHost.UseUrls("http://localhost:5192", "https://localhost:7002");
 
 var app = builder.Build();
 
