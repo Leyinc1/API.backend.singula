@@ -119,7 +119,7 @@ namespace Singula.Core.Services
 
         public async Task<string?> AuthenticateAsync(AuthRequestDto request)
         {
-            var user = await _repo.GetByUsernameAsync(request.Username);
+            var user = await _repo.GetByCorreoAsync(request.Correo);
             if (user == null) return null;
             if (string.IsNullOrEmpty(user.PasswordHash)) return null;
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)) return null;
@@ -149,6 +149,98 @@ namespace Singula.Core.Services
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
+        }
+
+        public async Task<UsuarioDto?> UpdateProfileAsync(int userId, UserProfileUpdateDto dto)
+        {
+            var user = await _repo.GetByIdAsync(userId);
+            if (user == null) return null;
+
+            // Actualizar solo los campos permitidos
+            if (!string.IsNullOrWhiteSpace(dto.Username))
+            {
+                // Verificar que el username no esté en uso por otro usuario
+                var existingUser = await _repo.GetByUsernameAsync(dto.Username);
+                if (existingUser != null && existingUser.IdUsuario != userId)
+                {
+                    throw new Exception("El nombre de usuario ya está en uso");
+                }
+                user.Username = dto.Username;
+            }
+
+            // Nota: Los campos Biografia y Telefono no existen en la entidad Usuario actual
+            // Si necesitas estos campos, deberás agregarlos a la entidad Usuario
+            // Por ahora, solo actualizamos Username
+
+            user.ActualizadoEn = DateTime.UtcNow;
+            var updated = await _repo.UpdateAsync(user);
+            
+            if (updated == null) return null;
+            
+            return new UsuarioDto
+            {
+                IdUsuario = updated.IdUsuario,
+                Username = updated.Username,
+                Correo = updated.Correo,
+                IdRolSistema = updated.IdRolSistema,
+                IdEstadoUsuario = updated.IdEstadoUsuario
+            };
+        }
+
+        public async Task ChangePasswordAsync(int userId, ChangePasswordDto dto)
+        {
+            var user = await _repo.GetByIdAsync(userId);
+            if (user == null)
+            {
+                throw new Exception("Usuario no encontrado");
+            }
+
+            // VALIDACIÓN CRÍTICA: Verificar que la contraseña actual sea correcta
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                throw new Exception("El usuario no tiene contraseña configurada");
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.ContrasenaActual, user.PasswordHash))
+            {
+                throw new UnauthorizedAccessException("La contraseña actual es incorrecta");
+            }
+
+            // Hashear la nueva contraseña
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NuevaContrasena);
+            user.ActualizadoEn = DateTime.UtcNow;
+
+            // Guardar cambios
+            await _repo.UpdateAsync(user);
+        }
+
+        /// <summary>
+        /// MÉTODO TEMPORAL DE ADMINISTRACIÓN - ELIMINAR DESPUÉS DE USAR
+        /// Fuerza el reseteo de contraseña del usuario administrador
+        /// </summary>
+        public async Task<bool> ForceResetAdminPasswordAsync(string newPassword)
+        {
+            // Paso 1: Buscar usuario administrador por correo
+            var adminUser = await _repo.GetByCorreoAsync("admi@simula.com");
+
+            // Paso 2: Verificar existencia
+            if (adminUser == null)
+            {
+                return false;
+            }
+
+            // Paso 3: Hashear la nueva contraseña usando BCrypt
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+            // Paso 4: Actualizar el campo password_hash
+            adminUser.PasswordHash = hashedPassword;
+            adminUser.ActualizadoEn = DateTime.UtcNow;
+
+            // Paso 5: Guardar cambios
+            var updated = await _repo.UpdateAsync(adminUser);
+
+            // Retornar true si la operación fue exitosa
+            return updated != null;
         }
     }
 }

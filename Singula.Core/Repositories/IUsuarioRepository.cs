@@ -12,5 +12,6 @@ namespace Singula.Core.Repositories
         Task<Usuario?> UpdateAsync(Usuario usuario);
         Task<bool> DeleteAsync(int id);
         Task<Usuario?> GetByUsernameAsync(string username);
+        Task<Usuario?> GetByCorreoAsync(string correo);
     }
 }
