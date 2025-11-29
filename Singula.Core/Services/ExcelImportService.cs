@@ -135,8 +135,8 @@ namespace Singula.Core.Services
                     }
                 }
 
-                // Validar columnas requeridas (FechaIngreso es opcional)
-                var requiredColumns = new[] { "Area", "FechaSolicitud" };
+                // Validar columnas requeridas
+                var requiredColumns = new[] { "Area", "FechaSolicitud", "TipoSolicitud", "Prioridad", "FechaIngreso" };
                 var missingColumns = requiredColumns.Where(c => !columnIndices.ContainsKey(c)).ToList();
                 if (missingColumns.Any())
                 {
@@ -174,6 +174,30 @@ namespace Singula.Core.Services
                             result.FailedRows++;
                             result.Errors.Add($"Fila {row.RowNumber()}: Fecha Solicitud está vacía (campo obligatorio)");
                             _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: Fecha Solicitud vacía (campo obligatorio)");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rowData.TipoSolicitud))
+                        {
+                            result.FailedRows++;
+                            result.Errors.Add($"Fila {row.RowNumber()}: Tipo de Solicitud está vacío (campo obligatorio)");
+                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: Tipo de Solicitud vacío (campo obligatorio)");
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rowData.Prioridad))
+                        {
+                            result.FailedRows++;
+                            result.Errors.Add($"Fila {row.RowNumber()}: Prioridad está vacía (campo obligatorio)");
+                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: Prioridad vacía (campo obligatorio)");
+                            continue;
+                        }
+
+                        if (!rowData.FechaIngreso.HasValue)
+                        {
+                            result.FailedRows++;
+                            result.Errors.Add($"Fila {row.RowNumber()}: Fecha de Ingreso está vacía (campo obligatorio)");
+                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: Fecha de Ingreso vacía (campo obligatorio)");
                             continue;
                         }
 
