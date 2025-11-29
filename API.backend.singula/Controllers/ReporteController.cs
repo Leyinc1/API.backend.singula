@@ -125,6 +125,12 @@ namespace API.backend.singula.Controllers
 
                 Console.WriteLine($"[ReporteController] Adjusted End Date: {adjustedEndDate}");
 
+                // Log de fechas de los primeros registros para debug
+                foreach (var item in allData.Take(3))
+                {
+                    Console.WriteLine($"[ReporteController] Registro ID: {item.Id}, FechaSolicitud: {item.FechaSolicitud}, FechaIngreso: {item.FechaIngreso}");
+                }
+
                 // Filtrar por rango de fechas usando FechaIngreso (fecha de finalización)
                 var filteredData = allData.Where(s => {
                     // Si no hay FechaIngreso, usar FechaSolicitud como fallback
