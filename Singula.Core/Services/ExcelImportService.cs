@@ -160,11 +160,20 @@ namespace Singula.Core.Services
                     {
                         var rowData = ExtractRowData(row, columnIndices);
                         
+                        // Validar campos OBLIGATORIOS
                         if (string.IsNullOrWhiteSpace(rowData.Area))
                         {
                             result.FailedRows++;
-                            result.Errors.Add($"Fila {row.RowNumber()}: AREA está vacía");
-                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: AREA vacía");
+                            result.Errors.Add($"Fila {row.RowNumber()}: AREA está vacía (campo obligatorio)");
+                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: AREA vacía (campo obligatorio)");
+                            continue;
+                        }
+
+                        if (!rowData.FechaSolicitud.HasValue)
+                        {
+                            result.FailedRows++;
+                            result.Errors.Add($"Fila {row.RowNumber()}: Fecha Solicitud está vacía (campo obligatorio)");
+                            _logger.LogWarning($"⚠️ Fila {row.RowNumber()}: Fecha Solicitud vacía (campo obligatorio)");
                             continue;
                         }
 
